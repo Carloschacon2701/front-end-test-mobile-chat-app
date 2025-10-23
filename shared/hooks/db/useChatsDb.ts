@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   loadUserChats,
   createNewChat,
   sendMessageToChat,
+  getChatMessagesPaginated,
   type Message,
   type Chat,
 } from "../../database/services/chats";
@@ -10,6 +11,9 @@ import {
 export function useChatsDb(currentUserId: string | null) {
   const [userChats, setUserChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [messagePagination, setMessagePagination] = useState<
+    Record<string, { offset: number; hasMore: boolean }>
+  >({});
 
   // Load chats for the current user
   useEffect(() => {
@@ -23,6 +27,19 @@ export function useChatsDb(currentUserId: string | null) {
       try {
         const loadedChats = await loadUserChats(currentUserId);
         setUserChats(loadedChats);
+
+        // Initialize pagination state for each chat
+        const initialPagination: Record<
+          string,
+          { offset: number; hasMore: boolean }
+        > = {};
+        loadedChats.forEach((chat) => {
+          initialPagination[chat.id] = {
+            offset: chat.messages.length,
+            hasMore: chat.messages.length === 50, // Assume more if we got exactly 50
+          };
+        });
+        setMessagePagination(initialPagination);
       } catch (error) {
         console.error("Error loading chats:", error);
       } finally {
@@ -54,6 +71,54 @@ export function useChatsDb(currentUserId: string | null) {
       }
     },
     [currentUserId]
+  );
+
+  const loadMoreMessages = useCallback(
+    async (chatId: string) => {
+      const pagination = messagePagination[chatId];
+      if (!pagination || !pagination.hasMore) return;
+
+      try {
+        const olderMessages = await getChatMessagesPaginated(
+          chatId,
+          pagination.offset,
+          50
+        );
+
+        if (olderMessages.length > 0) {
+          setUserChats((prevChats) => {
+            return prevChats.map((chat) => {
+              if (chat.id === chatId) {
+                return {
+                  ...chat,
+                  messages: [...olderMessages, ...chat.messages],
+                };
+              }
+              return chat;
+            });
+          });
+
+          setMessagePagination((prev) => ({
+            ...prev,
+            [chatId]: {
+              offset: pagination.offset + olderMessages.length,
+              hasMore: olderMessages.length === 50,
+            },
+          }));
+        } else {
+          setMessagePagination((prev) => ({
+            ...prev,
+            [chatId]: {
+              ...pagination,
+              hasMore: false,
+            },
+          }));
+        }
+      } catch (error) {
+        console.error("Error loading more messages:", error);
+      }
+    },
+    [messagePagination]
   );
 
   const sendMessage = useCallback(
@@ -99,10 +164,14 @@ export function useChatsDb(currentUserId: string | null) {
     []
   );
 
+  // Memoize chats to prevent unnecessary re-renders
+  const memoizedChats = useMemo(() => userChats, [userChats]);
+
   return {
-    chats: userChats,
+    chats: memoizedChats,
     createChat,
     sendMessage,
+    loadMoreMessages,
     loading,
   };
 }

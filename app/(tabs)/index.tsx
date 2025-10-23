@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { FlatList, StyleSheet, Pressable, Modal } from 'react-native';
 import { useAppContext } from '@/shared/hooks/AppContext';
 import { ThemedText } from '@/shared/components/ThemedText';
@@ -20,21 +20,37 @@ export default function ChatsScreen() {
     }
   };
 
-  const handleCreateChat = () => {
+  const handleCreateChat = useCallback(() => {
     if (currentUser && selectedUsers.length > 0) {
       const participants = [currentUser.id, ...selectedUsers];
       createChat(participants);
       setModalVisible(false);
       setSelectedUsers([]);
     }
-  };
+  }, [currentUser, selectedUsers, createChat]);
 
-  const renderEmptyComponent = () => (
+  const renderEmptyComponent = useCallback(() => (
     <ThemedView style={styles.emptyContainer}>
       <ThemedText style={styles.emptyText}>No chats yet</ThemedText>
       <ThemedText>Tap the + button to start a new conversation</ThemedText>
     </ThemedView>
-  );
+  ), []);
+
+  const keyExtractor = useCallback((item: any) => item.id, []);
+
+  const renderChatItem = useCallback(({ item }: { item: any }) => (
+    <ChatListItem
+      chat={item}
+      currentUserId={currentUser?.id || ''}
+      users={users}
+    />
+  ), [currentUser?.id, users]);
+
+  const getItemLayout = useCallback((data: any, index: number) => ({
+    length: 74, // Fixed height for chat list items
+    offset: 74 * index,
+    index,
+  }), []);
 
   return (
     <ThemedView style={styles.container}>
@@ -50,14 +66,13 @@ export default function ChatsScreen() {
 
       <FlatList
         data={chats}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <ChatListItem
-            chat={item}
-            currentUserId={currentUser?.id || ''}
-            users={users}
-          />
-        )}
+        keyExtractor={keyExtractor}
+        renderItem={renderChatItem}
+        getItemLayout={getItemLayout}
+        initialNumToRender={10}
+        maxToRenderPerBatch={5}
+        windowSize={10}
+        removeClippedSubviews={true}
         ListEmptyComponent={renderEmptyComponent}
         contentContainerStyle={styles.listContainer}
       />

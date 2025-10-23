@@ -1,16 +1,11 @@
-import { useUserDb, User } from './db/useUserDb';
+import { type User } from "../database/services/user";
+import { useUserDb } from "./db/useUserDb";
 
 export { User };
 
 export function useUser() {
-  const { 
-    users, 
-    currentUser, 
-    login, 
-    logout, 
-    isLoggedIn,
-    loading 
-  } = useUserDb();
+  const { users, currentUser, login, logout, isLoggedIn, loading } =
+    useUserDb();
 
   return {
     users,
@@ -20,4 +15,4 @@ export function useUser() {
     isLoggedIn,
     loading,
   };
-} 
+}

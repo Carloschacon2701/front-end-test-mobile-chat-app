@@ -86,7 +86,53 @@ export async function getChatMessages(chatId: string): Promise<Message[]> {
 }
 
 /**
- * Load all chats for a user with their messages and participants
+ * Get recent messages for a chat (for initial load)
+ */
+export async function getRecentMessages(
+  chatId: string,
+  limit: number = 50
+): Promise<Message[]> {
+  const messagesData = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.chatId, chatId))
+    .orderBy(messages.timestamp)
+    .limit(limit);
+
+  return messagesData.map((m) => ({
+    id: m.id,
+    senderId: m.senderId,
+    text: m.text,
+    timestamp: m.timestamp,
+  }));
+}
+
+/**
+ * Get paginated messages for a chat
+ */
+export async function getChatMessagesPaginated(
+  chatId: string,
+  offset: number = 0,
+  limit: number = 50
+): Promise<Message[]> {
+  const messagesData = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.chatId, chatId))
+    .orderBy(messages.timestamp)
+    .offset(offset)
+    .limit(limit);
+
+  return messagesData.map((m) => ({
+    id: m.id,
+    senderId: m.senderId,
+    text: m.text,
+    timestamp: m.timestamp,
+  }));
+}
+
+/**
+ * Load all chats for a user with their recent messages and participants
  */
 export async function loadUserChats(userId: string): Promise<Chat[]> {
   // Get chat IDs where the user is a participant
@@ -107,8 +153,8 @@ export async function loadUserChats(userId: string): Promise<Chat[]> {
     // Get participants
     const participantIds = await getChatParticipants(chatId);
 
-    // Get messages
-    const chatMessages = await getChatMessages(chatId);
+    // Get only recent messages (last 50) for performance
+    const chatMessages = await getRecentMessages(chatId, 50);
 
     // Determine last message
     const lastMessage =

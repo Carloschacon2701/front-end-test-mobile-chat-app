@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -16,31 +16,59 @@ import { ThemedView } from '@/shared/components/ThemedView';
 import { MessageBubble } from '@/shared/components/MessageBubble';
 import { Avatar } from '@/shared/components/Avatar';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
+import { Chat } from '@/shared/database/services/chats';
 
 export default function ChatRoomScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
-  const { currentUser, users, chats, sendMessage } = useAppContext();
+  const { currentUser, users, chats, sendMessage, loadMoreMessages } = useAppContext();
   const [messageText, setMessageText] = useState('');
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
 
-  const chat = chats.find(c => c.id === chatId);
+  const chat = useMemo(() => chats.find(c => c.id === chatId) as Chat, [chats, chatId]);
 
-  const chatParticipants = chat?.participants
-    .filter(id => id !== currentUser?.id)
-    .map(id => users.find(user => user.id === id))
-    .filter(Boolean) || [];
+  const chatParticipants = useMemo(() =>
+    chat?.participants
+      .filter(id => id !== currentUser?.id)
+      .map(id => users.find(user => user.id === id))
+      .filter(Boolean) || [],
+    [chat, currentUser, users]
+  );
 
-  const chatName = chatParticipants.length === 1
-    ? chatParticipants[0]?.name
-    : `${chatParticipants[0]?.name || 'Unknown'} & ${chatParticipants.length - 1} other${chatParticipants.length > 1 ? 's' : ''}`;
+  const chatName = useMemo(() =>
+    chatParticipants.length === 1
+      ? chatParticipants[0]?.name
+      : `${chatParticipants[0]?.name || 'Unknown'} & ${chatParticipants.length - 1} other${chatParticipants.length > 1 ? 's' : ''}`,
+    [chatParticipants]
+  );
 
-  const handleSendMessage = () => {
+  const handleSendMessage = useCallback(() => {
     if (messageText.trim() && currentUser && chat) {
       sendMessage(chat.id, messageText.trim(), currentUser.id);
       setMessageText('');
     }
-  };
+  }, [messageText, currentUser, chat, sendMessage]);
+
+  const handleLoadMore = useCallback(() => {
+    if (chatId) {
+      loadMoreMessages(chatId);
+    }
+  }, [chatId, loadMoreMessages]);
+
+  const keyExtractor = useCallback((item: any) => item.id, []);
+
+  const renderItem = useCallback(({ item }: { item: any }) => (
+    <MessageBubble
+      message={item}
+      isCurrentUser={item.senderId === currentUser?.id}
+    />
+  ), [currentUser?.id]);
+
+  const getItemLayout = useCallback((data: any, index: number) => ({
+    length: 80, // Estimated height for message bubble
+    offset: 80 * index,
+    index,
+  }), []);
 
   useEffect(() => {
     if (chat?.messages.length && flatListRef.current) {
@@ -90,13 +118,15 @@ export default function ChatRoomScreen() {
       <FlatList
         ref={flatListRef}
         data={chat.messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <MessageBubble
-            message={item}
-            isCurrentUser={item.senderId === currentUser.id}
-          />
-        )}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        getItemLayout={getItemLayout}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        removeClippedSubviews={true}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
         contentContainerStyle={styles.messagesContainer}
         ListEmptyComponent={() => (
           <ThemedView style={styles.emptyContainer}>

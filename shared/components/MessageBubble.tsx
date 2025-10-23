@@ -9,7 +9,7 @@ interface MessageBubbleProps {
   isCurrentUser: boolean;
 }
 
-export function MessageBubble({ message, isCurrentUser }: MessageBubbleProps) {
+const MessageBubble = React.memo(({ message, isCurrentUser }: MessageBubbleProps) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
@@ -43,7 +43,9 @@ export function MessageBubble({ message, isCurrentUser }: MessageBubbleProps) {
       </View>
     </View>
   );
-}
+});
+
+export { MessageBubble };
 
 const styles = StyleSheet.create({
   container: {
