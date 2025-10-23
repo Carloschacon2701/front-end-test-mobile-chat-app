@@ -1,5 +1,5 @@
-import { useDatabaseStatus } from '../database/DatabaseProvider';
+import { useDatabaseStatus } from "../database/context/DatabaseProvider";
 
 export function useDatabase() {
   return useDatabaseStatus();
-} 
+}

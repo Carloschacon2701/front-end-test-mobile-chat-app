@@ -1,14 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
-import { db } from '../../database/db';
-import { users } from '../../database/schema';
-import { eq } from 'drizzle-orm';
-
-export interface User {
-  id: string;
-  name: string;
-  avatar: string;
-  status: 'online' | 'offline' | 'away';
-}
+import { useState, useEffect, useCallback } from "react";
+import {
+  loadAllUsers,
+  getUserById,
+  type User,
+} from "../../database/services/user";
 
 export function useUserDb() {
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -19,29 +14,29 @@ export function useUserDb() {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const usersData = await db.select().from(users);
+        const usersData = await loadAllUsers();
         setAllUsers(usersData);
       } catch (error) {
-        console.error('Error loading users:', error);
+        console.error("Error loading users:", error);
       } finally {
         setLoading(false);
       }
     };
-    
+
     loadUsers();
   }, []);
-  
+
   const login = useCallback(async (userId: string) => {
     try {
-      const user = await db.select().from(users).where(eq(users.id, userId));
-      
-      if (user && user.length > 0) {
-        setCurrentUser(user[0]);
+      const user = await getUserById(userId);
+
+      if (user) {
+        setCurrentUser(user);
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Error during login:', error);
+      console.error("Error during login:", error);
       return false;
     }
   }, []);
@@ -58,4 +53,4 @@ export function useUserDb() {
     isLoggedIn: !!currentUser,
     loading,
   };
-} 
+}

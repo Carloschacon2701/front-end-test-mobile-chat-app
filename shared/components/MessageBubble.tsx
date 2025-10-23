@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { ThemedText } from '@/shared/components/ThemedText';
-import { Message } from '@/shared/hooks/db/useChatsDb';
+import { type Message } from '@/shared/database/services/chats';
 import { useColorScheme } from '@/shared/hooks/useColorScheme';
 
 interface MessageBubbleProps {

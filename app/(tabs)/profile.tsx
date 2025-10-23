@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Pressable, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAppContext } from '@/hooks/AppContext';
+import { useAppContext } from '@/shared/hooks/AppContext';
 import { ThemedText } from '@/shared/components/ThemedText';
 import { ThemedView } from '@/shared/components/ThemedView';
 import { Avatar } from '@/shared/components/Avatar';

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useUser, User } from './useUser';
 import { useChats, Chat } from './useChats';
-import { DatabaseProvider } from '../database/DatabaseProvider';
+import { DatabaseProvider } from '../database/context/DatabaseProvider';
 import { useDatabase } from './useDatabase';
 
 type AppContextType = {
@@ -23,7 +23,7 @@ function AppContent({ children }: { children: ReactNode }) {
   const { isInitialized } = useDatabase();
   const userContext = useUser();
   const chatContext = useChats(userContext.currentUser?.id || null);
-  
+
   const loading = !isInitialized || userContext.loading || chatContext.loading;
 
   const value = {
