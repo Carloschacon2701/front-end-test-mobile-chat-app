@@ -2,10 +2,10 @@ import React from 'react';
 import { StyleSheet, Pressable, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppContext } from '@/hooks/AppContext';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { Avatar } from '@/components/Avatar';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { ThemedText } from '@/shared/components/ThemedText';
+import { ThemedView } from '@/shared/components/ThemedView';
+import { Avatar } from '@/shared/components/Avatar';
+import { IconSymbol } from '@/shared/components/ui/IconSymbol';
 
 export default function ProfileScreen() {
   const { currentUser, logout } = useAppContext();
@@ -36,21 +36,21 @@ export default function ProfileScreen() {
             </ThemedText>
           </ThemedView>
         </ThemedView>
-        
+
         <ThemedView style={styles.section}>
           <ThemedText type="subtitle">Account Information</ThemedText>
-          
+
           <ThemedView style={styles.infoRow}>
             <ThemedText style={styles.infoLabel}>ID:</ThemedText>
             <ThemedText>{currentUser.id}</ThemedText>
           </ThemedView>
-          
+
           <ThemedView style={styles.infoRow}>
             <ThemedText style={styles.infoLabel}>Full Name:</ThemedText>
             <ThemedText>{currentUser.name}</ThemedText>
           </ThemedView>
         </ThemedView>
-        
+
         <ThemedView style={styles.buttonContainer}>
           <Pressable style={styles.logoutButton} onPress={handleLogout}>
             <IconSymbol name="arrow.right.square" size={20} color="#FFFFFF" />

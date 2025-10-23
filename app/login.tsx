@@ -2,17 +2,17 @@ import React from 'react';
 import { StyleSheet, FlatList, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useAppContext } from '@/hooks/AppContext';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { UserListItem } from '@/components/UserListItem';
+import { useAppContext } from '@/shared/hooks/AppContext';
+import { ThemedText } from '@/shared/components/ThemedText';
+import { ThemedView } from '@/shared/components/ThemedView';
+import { UserListItem } from '@/shared/components/UserListItem';
 
 export default function LoginScreen() {
   const { users, login } = useAppContext();
   const router = useRouter();
 
-  const handleUserSelect = (userId: string) => {
-    if (login(userId)) {
+  const handleUserSelect = async (userId: string) => {
+    if (await login(userId)) {
       router.replace('/(tabs)');
     }
   };
@@ -27,7 +27,7 @@ export default function LoginScreen() {
             Select a user to continue
           </ThemedText>
         </ThemedView>
-        
+
         <FlatList
           data={users}
           keyExtractor={(item) => item.id}

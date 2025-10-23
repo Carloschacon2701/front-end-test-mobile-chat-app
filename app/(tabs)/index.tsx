@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, Pressable, Modal } from 'react-native';
 import { useAppContext } from '@/hooks/AppContext';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { ChatListItem } from '@/components/ChatListItem';
-import { UserListItem } from '@/components/UserListItem';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { ThemedText } from '@/shared/components/ThemedText';
+import { ThemedView } from '@/shared/components/ThemedView';
+import { ChatListItem } from '@/shared/components/ChatListItem';
+import { UserListItem } from '@/shared/components/UserListItem';
+import { IconSymbol } from '@/shared/components/ui/IconSymbol';
 
 export default function ChatsScreen() {
   const { currentUser, users, chats, createChat } = useAppContext();

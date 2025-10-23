@@ -1,21 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, 
-  StyleSheet, 
-  FlatList, 
-  TextInput, 
-  Pressable, 
-  KeyboardAvoidingView, 
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  TextInput,
+  Pressable,
+  KeyboardAvoidingView,
   Platform
 } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useAppContext } from '@/hooks/AppContext';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { MessageBubble } from '@/components/MessageBubble';
-import { Avatar } from '@/components/Avatar';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useAppContext } from '@/shared/hooks/AppContext';
+import { ThemedText } from '@/shared/components/ThemedText';
+import { ThemedView } from '@/shared/components/ThemedView';
+import { MessageBubble } from '@/shared/components/MessageBubble';
+import { Avatar } from '@/shared/components/Avatar';
+import { IconSymbol } from '@/shared/components/ui/IconSymbol';
 
 export default function ChatRoomScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
@@ -23,16 +23,16 @@ export default function ChatRoomScreen() {
   const [messageText, setMessageText] = useState('');
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
-  
+
   const chat = chats.find(c => c.id === chatId);
-  
+
   const chatParticipants = chat?.participants
     .filter(id => id !== currentUser?.id)
     .map(id => users.find(user => user.id === id))
     .filter(Boolean) || [];
-  
-  const chatName = chatParticipants.length === 1 
-    ? chatParticipants[0]?.name 
+
+  const chatName = chatParticipants.length === 1
+    ? chatParticipants[0]?.name
     : `${chatParticipants[0]?.name || 'Unknown'} & ${chatParticipants.length - 1} other${chatParticipants.length > 1 ? 's' : ''}`;
 
   const handleSendMessage = () => {
@@ -65,13 +65,13 @@ export default function ChatRoomScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       <StatusBar style="auto" />
-      <Stack.Screen 
+      <Stack.Screen
         options={{
           headerTitle: () => (
             <View style={styles.headerContainer}>
-              <Avatar 
-                user={chatParticipants[0]} 
-                size={32} 
+              <Avatar
+                user={chatParticipants[0]}
+                size={32}
                 showStatus={false}
               />
               <ThemedText type="defaultSemiBold" numberOfLines={1}>
@@ -84,7 +84,7 @@ export default function ChatRoomScreen() {
               <IconSymbol name="chevron.left" size={24} color="#007AFF" />
             </Pressable>
           ),
-        }} 
+        }}
       />
 
       <FlatList

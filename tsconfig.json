@@ -5,9 +5,9 @@
     "paths": {
       "@/*": ["./*"],
       "@/app/*": ["./app/*"],
-      "@/components/*": ["./components/*"],
-      "@/hooks/*": ["./hooks/*"],
-      "@/drizzle/*": ["./drizzle/*"]
+      "@/shared/components/*": ["./shared/components/*"],
+      "@/shared/hooks/*": ["./shared/hooks/*"],
+      "@/shared/database/*": ["./shared/database/*"]
     }
   },
   "include": [
