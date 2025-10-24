@@ -11,9 +11,11 @@ type AppContextType = {
   login: (userId: string) => Promise<boolean>;
   logout: () => void;
   chats: Chat[];
+  unreadCounts: Record<string, number>;
   createChat: (participantIds: string[]) => Promise<Chat | null>;
   sendMessage: (chatId: string, text: string, senderId: string) => Promise<boolean>;
   loadMoreMessages: (chatId: string) => Promise<void>;
+  refreshUnreadCounts: () => Promise<void>;
   loading: boolean;
   dbInitialized: boolean;
 };

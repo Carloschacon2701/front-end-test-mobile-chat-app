@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { chats, chatParticipants, messages } from "../schema";
-import { eq, desc, and, inArray, sql } from "drizzle-orm";
+import { eq, desc, and, inArray, sql, not } from "drizzle-orm";
 
 // Simple in-memory cache for query results
 const queryCache = new Map<string, { data: any; timestamp: number }>();
@@ -32,6 +32,7 @@ export interface Message {
   senderId: string;
   text: string;
   timestamp: number;
+  isRead: boolean;
 }
 
 export interface Chat {
@@ -114,6 +115,7 @@ export async function getChatMessages(chatId: string): Promise<Message[]> {
     senderId: m.senderId,
     text: m.text,
     timestamp: m.timestamp,
+    isRead: m.isRead,
   }));
 }
 
@@ -147,6 +149,7 @@ export async function getRecentMessages(
       senderId: m.senderId,
       text: m.text,
       timestamp: m.timestamp,
+      isRead: m.isRead,
     }));
   }
 
@@ -165,6 +168,7 @@ export async function getRecentMessages(
     senderId: m.senderId,
     text: m.text,
     timestamp: m.timestamp,
+    isRead: m.isRead,
   }));
 }
 
@@ -189,6 +193,7 @@ export async function getChatMessagesPaginated(
     senderId: m.senderId,
     text: m.text,
     timestamp: m.timestamp,
+    isRead: m.isRead,
   }));
 }
 
@@ -275,6 +280,70 @@ export async function createNewChat(
   }
 }
 
+export async function markMessagesAsRead(
+  chatId: string,
+  currentUserId: string
+): Promise<void> {
+  await db
+    .update(messages)
+    .set({ isRead: true })
+    .where(
+      and(
+        eq(messages.chatId, chatId),
+        eq(messages.isRead, false),
+        not(eq(messages.senderId, currentUserId))
+      )
+    );
+  invalidateCache(`chat_${chatId}`);
+}
+
+/**
+ * Get unread message count for a specific chat
+ */
+export async function getUnreadMessageCount(
+  chatId: string,
+  currentUserId: string
+): Promise<number> {
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(messages)
+    .where(
+      and(
+        eq(messages.chatId, chatId),
+        eq(messages.isRead, false),
+        not(eq(messages.senderId, currentUserId))
+      )
+    );
+
+  return result[0]?.count || 0;
+}
+
+/**
+ * Get total unread message count for a user across all chats
+ */
+export async function getTotalUnreadMessageCount(
+  userId: string
+): Promise<number> {
+  const chatIds = await getUserChatIds(userId);
+
+  if (chatIds.length === 0) {
+    return 0;
+  }
+
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(messages)
+    .where(
+      and(
+        inArray(messages.chatId, chatIds),
+        eq(messages.isRead, false),
+        not(eq(messages.senderId, userId))
+      )
+    );
+
+  return result[0]?.count || 0;
+}
+
 /**
  * Send a message to a chat
  */
@@ -303,6 +372,7 @@ export async function sendMessageToChat(
       senderId,
       text,
       timestamp,
+      isRead: false,
     };
 
     return newMessage;

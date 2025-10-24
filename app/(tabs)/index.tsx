@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { FlatList, StyleSheet, Pressable, Modal } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAppContext } from '@/shared/hooks/AppContext';
 import { ThemedText } from '@/shared/components/ThemedText';
 import { ThemedView } from '@/shared/components/ThemedView';
@@ -8,7 +9,7 @@ import { UserListItem } from '@/shared/components/UserListItem';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
 
 export default function ChatsScreen() {
-  const { currentUser, users, chats, createChat } = useAppContext();
+  const { currentUser, users, chats, unreadCounts, createChat, refreshUnreadCounts } = useAppContext();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
@@ -29,6 +30,13 @@ export default function ChatsScreen() {
     }
   }, [currentUser, selectedUsers, createChat]);
 
+  // Refresh unread counts when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refreshUnreadCounts();
+    }, [refreshUnreadCounts])
+  );
+
   const renderEmptyComponent = useCallback(() => (
     <ThemedView style={styles.emptyContainer}>
       <ThemedText style={styles.emptyText}>No chats yet</ThemedText>
@@ -43,8 +51,9 @@ export default function ChatsScreen() {
       chat={item}
       currentUserId={currentUser?.id || ''}
       users={users}
+      unreadCount={unreadCounts[item.id] || 0}
     />
-  ), [currentUser?.id, users]);
+  ), [currentUser?.id, users, unreadCounts]);
 
   const getItemLayout = useCallback((data: any, index: number) => ({
     length: 74, // Fixed height for chat list items

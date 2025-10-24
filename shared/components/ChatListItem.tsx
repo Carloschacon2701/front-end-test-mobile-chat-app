@@ -10,9 +10,10 @@ interface ChatListItemProps {
   chat: Chat;
   currentUserId: string;
   users: User[];
+  unreadCount?: number;
 }
 
-const ChatListItem = React.memo(({ chat, currentUserId, users }: ChatListItemProps) => {
+const ChatListItem = React.memo(({ chat, currentUserId, users, unreadCount = 0 }: ChatListItemProps) => {
   const navigation = useNavigation();
 
   const otherParticipants = useMemo(() => {
@@ -33,7 +34,7 @@ const ChatListItem = React.memo(({ chat, currentUserId, users }: ChatListItemPro
   }, [otherParticipants]);
 
   const handlePress = () => {
-    navigation.navigate('ChatRoom' as never, { chatId: chat.id } as never);
+    (navigation as any).navigate('ChatRoom', { chatId: chat.id });
   };
 
   const timeString = useMemo(() => {
@@ -83,6 +84,13 @@ const ChatListItem = React.memo(({ chat, currentUserId, users }: ChatListItemPro
               {isCurrentUserLastSender && 'You: '}{chat.lastMessage.text}
             </ThemedText>
           )}
+          {unreadCount > 0 && (
+            <View style={styles.unreadBadge}>
+              <ThemedText style={styles.unreadText}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </ThemedText>
+            </View>
+          )}
         </View>
       </View>
     </Pressable>
@@ -129,5 +137,19 @@ const styles = StyleSheet.create({
   },
   currentUserMessage: {
     fontStyle: 'italic',
+  },
+  unreadBadge: {
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  unreadText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 }); 

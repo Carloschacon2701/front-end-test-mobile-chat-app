@@ -17,6 +17,7 @@ import { MessageBubble } from '@/shared/components/MessageBubble';
 import { Avatar } from '@/shared/components/Avatar';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
 import { Chat } from '@/shared/database/services/chats';
+import { markMessagesAsRead } from '@/shared/database/services/chats';
 
 export default function ChatRoomScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
@@ -77,6 +78,13 @@ export default function ChatRoomScreen() {
       }, 100);
     }
   }, [chat?.messages.length]);
+
+  // Mark messages as read when user views the chat
+  useEffect(() => {
+    if (chatId && currentUser?.id) {
+      markMessagesAsRead(chatId, currentUser.id);
+    }
+  }, [chatId, currentUser?.id]);
 
   if (!chat || !currentUser) {
     return (

@@ -5,14 +5,23 @@ import { type Message } from "../database/services/chats";
 export { Chat, Message };
 
 export function useChats(currentUserId: string | null) {
-  const { chats, createChat, sendMessage, loading, loadMoreMessages } =
-    useChatsDb(currentUserId);
-
-  return {
+  const {
     chats,
+    unreadCounts,
     createChat,
     sendMessage,
     loading,
     loadMoreMessages,
+    refreshUnreadCounts,
+  } = useChatsDb(currentUserId);
+
+  return {
+    chats,
+    unreadCounts,
+    createChat,
+    sendMessage,
+    loading,
+    loadMoreMessages,
+    refreshUnreadCounts,
   };
 }

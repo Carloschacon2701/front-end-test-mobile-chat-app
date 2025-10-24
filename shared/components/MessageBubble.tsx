@@ -39,6 +39,11 @@ const MessageBubble = React.memo(({ message, isCurrentUser }: MessageBubbleProps
           <ThemedText style={styles.timeText}>
             {formatTime(message.timestamp)}
           </ThemedText>
+          {isCurrentUser && (
+            <ThemedText style={[styles.readStatus, { color: isDark ? '#4CAF50' : '#4CAF50' }]}>
+              {message.isRead ? '✓✓' : '✓'}
+            </ThemedText>
+          )}
         </View>
       </View>
     </View>
@@ -87,5 +92,10 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 11,
     opacity: 0.7,
+  },
+  readStatus: {
+    fontSize: 10,
+    marginLeft: 4,
+    fontWeight: 'bold',
   },
 }); 

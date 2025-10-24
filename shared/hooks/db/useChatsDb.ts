@@ -4,6 +4,7 @@ import {
   createNewChat,
   sendMessageToChat,
   getChatMessagesPaginated,
+  getUnreadMessageCount,
   type Message,
   type Chat,
 } from "../../database/services/chats";
@@ -11,6 +12,7 @@ import {
 export function useChatsDb(currentUserId: string | null) {
   const [userChats, setUserChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [messagePagination, setMessagePagination] = useState<
     Record<string, { offset: number; hasMore: boolean }>
   >({});
@@ -40,6 +42,14 @@ export function useChatsDb(currentUserId: string | null) {
           };
         });
         setMessagePagination(initialPagination);
+
+        // Load unread counts for each chat
+        const unreadCountsData: Record<string, number> = {};
+        for (const chat of loadedChats) {
+          const count = await getUnreadMessageCount(chat.id, currentUserId);
+          unreadCountsData[chat.id] = count;
+        }
+        setUnreadCounts(unreadCountsData);
       } catch (error) {
         console.error("Error loading chats:", error);
       } finally {
@@ -164,14 +174,28 @@ export function useChatsDb(currentUserId: string | null) {
     []
   );
 
+  // Function to refresh unread counts
+  const refreshUnreadCounts = useCallback(async () => {
+    if (!currentUserId) return;
+
+    const unreadCountsData: Record<string, number> = {};
+    for (const chat of userChats) {
+      const count = await getUnreadMessageCount(chat.id, currentUserId);
+      unreadCountsData[chat.id] = count;
+    }
+    setUnreadCounts(unreadCountsData);
+  }, [currentUserId, userChats]);
+
   // Memoize chats to prevent unnecessary re-renders
   const memoizedChats = useMemo(() => userChats, [userChats]);
 
   return {
     chats: memoizedChats,
+    unreadCounts,
     createChat,
     sendMessage,
     loadMoreMessages,
+    refreshUnreadCounts,
     loading,
   };
 }

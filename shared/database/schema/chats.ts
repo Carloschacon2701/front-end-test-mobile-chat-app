@@ -13,12 +13,10 @@ export const chatParticipants = sqliteTable(
       .references(() => chats.id),
     userId: text("user_id").notNull(),
   },
-  (table) => ({
-    // Index for finding chats by user
-    userIdIdx: index("chat_participants_user_id_idx").on(table.userId),
-    // Index for finding participants by chat
-    chatIdIdx: index("chat_participants_chat_id_idx").on(table.chatId),
-  })
+  (table) => [
+    index("chat_participants_user_id_idx").on(table.userId),
+    index("chat_participants_chat_id_idx").on(table.chatId),
+  ]
 );
 
 export const messages = sqliteTable(
@@ -31,14 +29,10 @@ export const messages = sqliteTable(
     senderId: text("sender_id").notNull(),
     text: text("text").notNull(),
     timestamp: integer("timestamp").notNull(),
+    isRead: integer("is_read", { mode: "boolean" }).notNull().default(false),
   },
-  (table) => ({
-    // Index for finding messages by chat and ordering by timestamp
-    chatTimestampIdx: index("messages_chat_timestamp_idx").on(
-      table.chatId,
-      table.timestamp
-    ),
-    // Index for finding messages by sender
-    senderIdx: index("messages_sender_idx").on(table.senderId),
-  })
+  (table) => [
+    index("messages_chat_timestamp_idx").on(table.chatId, table.timestamp),
+    index("messages_sender_idx").on(table.senderId),
+  ]
 );
