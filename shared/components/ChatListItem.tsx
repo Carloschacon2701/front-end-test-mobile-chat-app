@@ -3,8 +3,8 @@ import { View, StyleSheet, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Avatar } from './Avatar';
 import { ThemedText } from './ThemedText';
-import { type User } from '../database/services/user';
-import { type Chat } from '../database/services/chats';
+import { type User } from '../services/user';
+import { type Chat } from '../services/chats';
 
 interface ChatListItemProps {
   chat: Chat;

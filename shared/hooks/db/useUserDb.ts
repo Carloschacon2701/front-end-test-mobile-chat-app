@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { userService, type User } from "../../database/services/user";
+import { userService, type User } from "../../services/user";
 
 export function useUserDb() {
   const [allUsers, setAllUsers] = useState<User[]>([]);

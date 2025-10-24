@@ -1,6 +1,6 @@
-import { useChatsDb } from "./db/useChatsDb";
-import { type Chat } from "../database/services/chats";
-import { type Message } from "../database/services/chats";
+import { useChatsDb } from "./useChatsDb";
+import { type Chat } from "../../services/chats";
+import { type Message } from "../../services/chats";
 
 export { Chat, Message };
 

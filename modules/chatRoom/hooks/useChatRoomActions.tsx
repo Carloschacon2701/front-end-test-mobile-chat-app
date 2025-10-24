@@ -1,5 +1,5 @@
 import { useAppContext } from "@/shared/hooks/AppContext";
-import { Chat, Message } from "@/shared/hooks/useChats";
+import { Chat, Message } from "@/shared/hooks/db/useChats";
 import { useState, useCallback } from "react";
 import { Alert } from "react-native";
 

@@ -1,5 +1,5 @@
-import { db } from "../db";
-import { chats, chatParticipants, messages } from "../schema";
+import { db } from "../database/db";
+import { chats, chatParticipants, messages } from "../database/schema";
 import { eq, desc, and, inArray, sql, not } from "drizzle-orm";
 
 export interface Message {

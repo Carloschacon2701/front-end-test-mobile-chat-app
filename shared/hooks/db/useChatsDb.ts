@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  chatsService,
-  type Message,
-  type Chat,
-} from "../../database/services/chats";
+import { chatsService, type Message, type Chat } from "../../services/chats";
 
 export function useChatsDb(currentUserId: string | null) {
   const [userChats, setUserChats] = useState<Chat[]>([]);

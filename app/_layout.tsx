@@ -6,12 +6,15 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/shared/hooks/useColorScheme';
+import { useColorScheme } from '@/shared/hooks/theme/useColorScheme';
 import { AppProvider, useAppContext } from '@/shared/hooks/AppContext';
 import { DrizzleStudioDevTool } from '@/shared/database/DrizzleStudio';
-import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
+import { useProtectedRoute } from '@/shared/hooks/auth/useProtectedRoute';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 SplashScreen.preventAutoHideAsync();
+
+const queryClient = new QueryClient();
 
 
 function RootLayoutNav() {
@@ -56,11 +59,13 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AppProvider>
-        <RootLayoutNav />
-        <StatusBar style="auto" />
-      </AppProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <AppProvider>
+          <RootLayoutNav />
+          <StatusBar style="auto" />
+        </AppProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }

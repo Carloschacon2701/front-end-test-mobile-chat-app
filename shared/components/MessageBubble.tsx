@@ -2,8 +2,8 @@ import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { ThemedText } from '@/shared/components/ThemedText';
-import { type Message } from '@/shared/database/services/chats';
-import { useColorScheme } from '@/shared/hooks/useColorScheme';
+import { type Message } from '@/shared/services/chats';
+import { useColorScheme } from '@/shared/hooks/theme/useColorScheme';
 
 interface MessageBubbleProps {
   message: Message;

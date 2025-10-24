@@ -1,8 +1,8 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useUser, User } from './useUser';
-import { useChats, Chat } from './useChats';
+import { useUser, User } from './db/useUser';
+import { useChats, Chat } from './db/useChats';
 import { DatabaseProvider } from '../database/context/DatabaseProvider';
-import { useDatabase } from './useDatabase';
+import { useDatabase } from './db/useDatabase';
 
 type AppContextType = {
   users: User[];

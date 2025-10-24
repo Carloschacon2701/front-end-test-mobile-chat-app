@@ -3,7 +3,7 @@ import { View, StyleSheet, TextInput, Pressable, Modal } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { ThemedText } from '@/shared/components/ThemedText';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
-import { useColorScheme } from '@/shared/hooks/useColorScheme';
+import { useColorScheme } from '@/shared/hooks/theme/useColorScheme';
 
 interface EditMessageModalProps {
     visible: boolean;

@@ -1,5 +1,5 @@
-import { type User } from "../database/services/user";
-import { useUserDb } from "./db/useUserDb";
+import { type User } from "../../services/user";
+import { useUserDb } from "./useUserDb";
 
 export { User };
 
