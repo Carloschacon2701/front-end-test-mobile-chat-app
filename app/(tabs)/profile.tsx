@@ -1,6 +1,5 @@
 import React from 'react';
 import { StyleSheet, Pressable, SafeAreaView } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useAppContext } from '@/shared/hooks/AppContext';
 import { ThemedText } from '@/shared/components/ThemedText';
 import { ThemedView } from '@/shared/components/ThemedView';
@@ -9,11 +8,9 @@ import { IconSymbol } from '@/shared/components/ui/IconSymbol';
 
 export default function ProfileScreen() {
   const { currentUser, logout } = useAppContext();
-  const router = useRouter();
 
   const handleLogout = () => {
     logout();
-    // The navigation to login will be handled by the useProtectedRoute hook in _layout.tsx
   };
 
   if (!currentUser) {

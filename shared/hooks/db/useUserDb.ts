@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  loadAllUsers,
-  getUserById,
-  type User,
-} from "../../database/services/user";
+import { userService, type User } from "../../database/services/user";
 
 export function useUserDb() {
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -14,7 +10,7 @@ export function useUserDb() {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const usersData = await loadAllUsers();
+        const usersData = await userService.loadAllUsers();
         setAllUsers(usersData);
       } catch (error) {
         console.error("Error loading users:", error);
@@ -28,7 +24,7 @@ export function useUserDb() {
 
   const login = useCallback(async (userId: string) => {
     try {
-      const user = await getUserById(userId);
+      const user = await userService.getUserById(userId);
 
       if (user) {
         setCurrentUser(user);

@@ -9,27 +9,10 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/shared/hooks/useColorScheme';
 import { AppProvider, useAppContext } from '@/shared/hooks/AppContext';
 import { DrizzleStudioDevTool } from '@/shared/database/DrizzleStudio';
+import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 
 SplashScreen.preventAutoHideAsync();
 
-function useProtectedRoute(isLoggedIn: boolean, loading: boolean) {
-  const segments = useSegments();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (loading) return; // Don't redirect during loading
-
-    const inAuthGroup = segments[0] === 'login';
-
-    if (!isLoggedIn && !inAuthGroup) {
-      // Redirect to the login page if not logged in
-      router.replace('/login');
-    } else if (isLoggedIn && inAuthGroup) {
-      // Redirect to the home page if logged in and trying to access login page
-      router.replace('/(tabs)');
-    }
-  }, [isLoggedIn, segments, loading]);
-}
 
 function RootLayoutNav() {
   const { isLoggedIn, loading } = useAppContext();

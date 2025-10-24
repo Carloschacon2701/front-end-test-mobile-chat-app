@@ -1,12 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  loadUserChats,
-  createNewChat,
-  sendMessageToChat,
-  getChatMessagesPaginated,
-  getUnreadMessageCount,
-  editMessage,
-  deleteMessage,
+  chatsService,
   type Message,
   type Chat,
 } from "../../database/services/chats";
@@ -29,7 +23,7 @@ export function useChatsDb(currentUserId: string | null) {
       }
 
       try {
-        const loadedChats = await loadUserChats(currentUserId);
+        const loadedChats = await chatsService.loadUserChats(currentUserId);
         setUserChats(loadedChats);
 
         // Initialize pagination state for each chat
@@ -48,7 +42,10 @@ export function useChatsDb(currentUserId: string | null) {
         // Load unread counts for each chat
         const unreadCountsData: Record<string, number> = {};
         for (const chat of loadedChats) {
-          const count = await getUnreadMessageCount(chat.id, currentUserId);
+          const count = await chatsService.getUnreadMessageCount(
+            chat.id,
+            currentUserId
+          );
           unreadCountsData[chat.id] = count;
         }
         setUnreadCounts(unreadCountsData);
@@ -70,7 +67,10 @@ export function useChatsDb(currentUserId: string | null) {
 
       try {
         const chatId = `chat${Date.now()}`;
-        const newChat = await createNewChat(chatId, participantIds);
+        const newChat = await chatsService.createNewChat(
+          chatId,
+          participantIds
+        );
 
         if (newChat) {
           setUserChats((prevChats) => [...prevChats, newChat]);
@@ -91,7 +91,7 @@ export function useChatsDb(currentUserId: string | null) {
       if (!pagination || !pagination.hasMore) return;
 
       try {
-        const olderMessages = await getChatMessagesPaginated(
+        const olderMessages = await chatsService.getChatMessagesPaginated(
           chatId,
           pagination.offset,
           50
@@ -141,7 +141,7 @@ export function useChatsDb(currentUserId: string | null) {
         const messageId = `msg${Date.now()}`;
         const timestamp = Date.now();
 
-        const newMessage = await sendMessageToChat(
+        const newMessage = await chatsService.sendMessageToChat(
           messageId,
           chatId,
           senderId,
@@ -180,7 +180,7 @@ export function useChatsDb(currentUserId: string | null) {
   const editMessageInChat = useCallback(
     async (messageId: string, newText: string) => {
       try {
-        await editMessage(messageId, newText);
+        await chatsService.editMessage(messageId, newText);
 
         // Update state optimistically
         setUserChats((prevChats) => {
@@ -219,7 +219,7 @@ export function useChatsDb(currentUserId: string | null) {
   // Function to delete a message
   const deleteMessageInChat = useCallback(async (messageId: string) => {
     try {
-      await deleteMessage(messageId);
+      await chatsService.deleteMessage(messageId);
 
       // Update state optimistically
       setUserChats((prevChats) => {
@@ -254,7 +254,10 @@ export function useChatsDb(currentUserId: string | null) {
 
     const unreadCountsData: Record<string, number> = {};
     for (const chat of userChats) {
-      const count = await getUnreadMessageCount(chat.id, currentUserId);
+      const count = await chatsService.getUnreadMessageCount(
+        chat.id,
+        currentUserId
+      );
       unreadCountsData[chat.id] = count;
     }
     setUnreadCounts(unreadCountsData);

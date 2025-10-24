@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,11 +7,9 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
-  Alert
 } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useAppContext } from '@/shared/hooks/AppContext';
 import { ThemedText } from '@/shared/components/ThemedText';
 import { ThemedView } from '@/shared/components/ThemedView';
 import { MessageBubble } from '@/shared/components/MessageBubble';
@@ -19,116 +17,39 @@ import { MessageActionMenu } from '@/shared/components/MessageActionMenu';
 import { EditMessageModal } from '@/shared/components/EditMessageModal';
 import { Avatar } from '@/shared/components/Avatar';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
-import { Chat, Message } from '@/shared/database/services/chats';
-import { markMessagesAsRead } from '@/shared/database/services/chats';
+import { chatsService, Chat, Message } from '@/shared/database/services/chats';
+import { useChatRoomActions } from '@/modules/chatRoom/hooks/useChatRoomActions';
 
 export default function ChatRoomScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
-  const { currentUser, users, chats, sendMessage, editMessage, deleteMessage, loadMoreMessages } = useAppContext();
-  const [messageText, setMessageText] = useState('');
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
-
-  // State for action menu and edit modal
-  const [actionMenuVisible, setActionMenuVisible] = useState(false);
-  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
-  const [messagePosition, setMessagePosition] = useState({ x: 0, y: 0 });
-  const [editModalVisible, setEditModalVisible] = useState(false);
-
-  const chat = useMemo(() => chats.find(c => c.id === chatId) as Chat, [chats, chatId]);
-
-  const chatParticipants = useMemo(() =>
-    chat?.participants
-      .filter(id => id !== currentUser?.id)
-      .map(id => users.find(user => user.id === id))
-      .filter(Boolean) || [],
-    [chat, currentUser, users]
-  );
-
-  const chatName = useMemo(() =>
-    chatParticipants.length === 1
-      ? chatParticipants[0]?.name
-      : `${chatParticipants[0]?.name || 'Unknown'} & ${chatParticipants.length - 1} other${chatParticipants.length > 1 ? 's' : ''}`,
-    [chatParticipants]
-  );
-
-  const handleSendMessage = useCallback(() => {
-    if (messageText.trim() && currentUser && chat) {
-      sendMessage(chat.id, messageText.trim(), currentUser.id);
-      setMessageText('');
-    }
-  }, [messageText, currentUser, chat, sendMessage]);
-
-  const handleLoadMore = useCallback(() => {
-    if (chatId) {
-      loadMoreMessages(chatId);
-    }
-  }, [chatId, loadMoreMessages]);
-
-  // Handle long press on message
-  const handleMessageLongPress = useCallback((message: Message, position: { x: number; y: number }) => {
-    setSelectedMessage(message);
-    setMessagePosition(position);
-    setActionMenuVisible(true);
-  }, []);
-
-  // Handle edit message
-  const handleEditMessage = useCallback(() => {
-    setActionMenuVisible(false);
-    setEditModalVisible(true);
-  }, []);
-
-  // Handle save edited message
-  const handleSaveEditedMessage = useCallback(async (newText: string) => {
-    if (selectedMessage) {
-      const success = await editMessage(selectedMessage.id, newText);
-      if (success) {
-        setEditModalVisible(false);
-        setSelectedMessage(null);
-      }
-    }
-  }, [selectedMessage, editMessage]);
-
-  // Handle delete message
-  const handleDeleteMessage = useCallback(async () => {
-    if (selectedMessage) {
-      Alert.alert(
-        'Delete Message',
-        'Are you sure you want to delete this message?',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              const success = await deleteMessage(selectedMessage.id);
-              if (success) {
-                setActionMenuVisible(false);
-                setSelectedMessage(null);
-              }
-            },
-          },
-        ]
-      );
-    }
-  }, [selectedMessage, deleteMessage]);
-
-  // Handle dismiss action menu
-  const handleDismissActionMenu = useCallback(() => {
-    setActionMenuVisible(false);
-    setSelectedMessage(null);
-  }, []);
-
-  // Handle cancel edit modal
-  const handleCancelEditModal = useCallback(() => {
-    setEditModalVisible(false);
-    setSelectedMessage(null);
-  }, []);
+  const { handleSendMessage,
+    actionMenuVisible,
+    selectedMessage,
+    messagePosition,
+    editModalVisible,
+    chatParticipants,
+    handleChangeMessageText,
+    messageText,
+    chatName,
+    currentUser, chat,
+    handleLoadMore,
+    handleMessageLongPress,
+    handleEditMessage,
+    handleSaveEditedMessage,
+    handleDeleteMessage,
+    handleDismissActionMenu,
+    handleCancelEditModal,
+  } = useChatRoomActions(chatId);
 
   const keyExtractor = useCallback((item: any) => item.id, []);
+
+  const getItemLayout = useCallback((data: any, index: number) => ({
+    length: 80,
+    offset: 80 * index,
+    index,
+  }), []);
 
   const renderItem = useCallback(({ item }: { item: any }) => (
     <MessageBubble
@@ -137,12 +58,6 @@ export default function ChatRoomScreen() {
       onLongPress={handleMessageLongPress}
     />
   ), [currentUser?.id, handleMessageLongPress]);
-
-  const getItemLayout = useCallback((data: any, index: number) => ({
-    length: 80, // Estimated height for message bubble
-    offset: 80 * index,
-    index,
-  }), []);
 
   useEffect(() => {
     if (chat?.messages.length && flatListRef.current) {
@@ -155,9 +70,10 @@ export default function ChatRoomScreen() {
   // Mark messages as read when user views the chat
   useEffect(() => {
     if (chatId && currentUser?.id) {
-      markMessagesAsRead(chatId, currentUser.id);
+      chatsService.markMessagesAsRead(chatId, currentUser.id);
     }
   }, [chatId, currentUser?.id]);
+
 
   if (!chat || !currentUser) {
     return (
@@ -220,7 +136,7 @@ export default function ChatRoomScreen() {
         <TextInput
           style={styles.input}
           value={messageText}
-          onChangeText={setMessageText}
+          onChangeText={handleChangeMessageText}
           placeholder="Type a message..."
           multiline
         />
