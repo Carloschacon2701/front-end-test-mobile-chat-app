@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { ThemedText } from '@/shared/components/ThemedText';
 import { type Message } from '@/shared/database/services/chats';
 import { useColorScheme } from '@/shared/hooks/useColorScheme';
@@ -7,9 +8,10 @@ import { useColorScheme } from '@/shared/hooks/useColorScheme';
 interface MessageBubbleProps {
   message: Message;
   isCurrentUser: boolean;
+  onLongPress?: (message: Message, position: { x: number; y: number }) => void;
 }
 
-const MessageBubble = React.memo(({ message, isCurrentUser }: MessageBubbleProps) => {
+const MessageBubble = React.memo(({ message, isCurrentUser, onLongPress }: MessageBubbleProps) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
@@ -18,11 +20,46 @@ const MessageBubble = React.memo(({ message, isCurrentUser }: MessageBubbleProps
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const handleLongPress = (event: any) => {
+    if (onLongPress && isCurrentUser) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const { pageX, pageY } = event.nativeEvent;
+      onLongPress(message, { x: pageX, y: pageY });
+    }
+  };
+
+  // Show deleted message placeholder
+  if (message.isDeleted) {
+    return (
+      <View style={[
+        styles.container,
+        isCurrentUser ? styles.selfContainer : styles.otherContainer
+      ]}>
+        <View style={[
+          styles.bubble,
+          styles.deletedBubble,
+          { backgroundColor: isDark ? '#2A2C33' : '#F0F0F0' }
+        ]}>
+          <ThemedText style={[
+            styles.deletedText,
+            { color: isDark ? '#666666' : '#999999' }
+          ]}>
+            This message was deleted
+          </ThemedText>
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <View style={[
-      styles.container,
-      isCurrentUser ? styles.selfContainer : styles.otherContainer
-    ]}>
+    <Pressable
+      style={[
+        styles.container,
+        isCurrentUser ? styles.selfContainer : styles.otherContainer
+      ]}
+      onLongPress={handleLongPress}
+      disabled={!isCurrentUser}
+    >
       <View style={[
         styles.bubble,
         isCurrentUser
@@ -39,6 +76,11 @@ const MessageBubble = React.memo(({ message, isCurrentUser }: MessageBubbleProps
           <ThemedText style={styles.timeText}>
             {formatTime(message.timestamp)}
           </ThemedText>
+          {message.isEdited && (
+            <ThemedText style={[styles.editedLabel, { color: isDark ? '#999999' : '#666666' }]}>
+              edited
+            </ThemedText>
+          )}
           {isCurrentUser && (
             <ThemedText style={[styles.readStatus, { color: isDark ? '#4CAF50' : '#4CAF50' }]}>
               {message.isRead ? '✓✓' : '✓'}
@@ -46,7 +88,7 @@ const MessageBubble = React.memo(({ message, isCurrentUser }: MessageBubbleProps
           )}
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 });
 
@@ -97,5 +139,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginLeft: 4,
     fontWeight: 'bold',
+  },
+  editedLabel: {
+    fontSize: 10,
+    marginLeft: 4,
+    fontStyle: 'italic',
+  },
+  deletedBubble: {
+    opacity: 0.7,
+  },
+  deletedText: {
+    fontSize: 14,
+    fontStyle: 'italic',
   },
 }); 

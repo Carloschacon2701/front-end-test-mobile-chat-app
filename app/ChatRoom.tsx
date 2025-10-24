@@ -6,7 +6,8 @@ import {
   TextInput,
   Pressable,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Alert
 } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -14,17 +15,25 @@ import { useAppContext } from '@/shared/hooks/AppContext';
 import { ThemedText } from '@/shared/components/ThemedText';
 import { ThemedView } from '@/shared/components/ThemedView';
 import { MessageBubble } from '@/shared/components/MessageBubble';
+import { MessageActionMenu } from '@/shared/components/MessageActionMenu';
+import { EditMessageModal } from '@/shared/components/EditMessageModal';
 import { Avatar } from '@/shared/components/Avatar';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
-import { Chat } from '@/shared/database/services/chats';
+import { Chat, Message } from '@/shared/database/services/chats';
 import { markMessagesAsRead } from '@/shared/database/services/chats';
 
 export default function ChatRoomScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
-  const { currentUser, users, chats, sendMessage, loadMoreMessages } = useAppContext();
+  const { currentUser, users, chats, sendMessage, editMessage, deleteMessage, loadMoreMessages } = useAppContext();
   const [messageText, setMessageText] = useState('');
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
+
+  // State for action menu and edit modal
+  const [actionMenuVisible, setActionMenuVisible] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [messagePosition, setMessagePosition] = useState({ x: 0, y: 0 });
+  const [editModalVisible, setEditModalVisible] = useState(false);
 
   const chat = useMemo(() => chats.find(c => c.id === chatId) as Chat, [chats, chatId]);
 
@@ -56,14 +65,78 @@ export default function ChatRoomScreen() {
     }
   }, [chatId, loadMoreMessages]);
 
+  // Handle long press on message
+  const handleMessageLongPress = useCallback((message: Message, position: { x: number; y: number }) => {
+    setSelectedMessage(message);
+    setMessagePosition(position);
+    setActionMenuVisible(true);
+  }, []);
+
+  // Handle edit message
+  const handleEditMessage = useCallback(() => {
+    setActionMenuVisible(false);
+    setEditModalVisible(true);
+  }, []);
+
+  // Handle save edited message
+  const handleSaveEditedMessage = useCallback(async (newText: string) => {
+    if (selectedMessage) {
+      const success = await editMessage(selectedMessage.id, newText);
+      if (success) {
+        setEditModalVisible(false);
+        setSelectedMessage(null);
+      }
+    }
+  }, [selectedMessage, editMessage]);
+
+  // Handle delete message
+  const handleDeleteMessage = useCallback(async () => {
+    if (selectedMessage) {
+      Alert.alert(
+        'Delete Message',
+        'Are you sure you want to delete this message?',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              const success = await deleteMessage(selectedMessage.id);
+              if (success) {
+                setActionMenuVisible(false);
+                setSelectedMessage(null);
+              }
+            },
+          },
+        ]
+      );
+    }
+  }, [selectedMessage, deleteMessage]);
+
+  // Handle dismiss action menu
+  const handleDismissActionMenu = useCallback(() => {
+    setActionMenuVisible(false);
+    setSelectedMessage(null);
+  }, []);
+
+  // Handle cancel edit modal
+  const handleCancelEditModal = useCallback(() => {
+    setEditModalVisible(false);
+    setSelectedMessage(null);
+  }, []);
+
   const keyExtractor = useCallback((item: any) => item.id, []);
 
   const renderItem = useCallback(({ item }: { item: any }) => (
     <MessageBubble
       message={item}
       isCurrentUser={item.senderId === currentUser?.id}
+      onLongPress={handleMessageLongPress}
     />
-  ), [currentUser?.id]);
+  ), [currentUser?.id, handleMessageLongPress]);
 
   const getItemLayout = useCallback((data: any, index: number) => ({
     length: 80, // Estimated height for message bubble
@@ -159,6 +232,23 @@ export default function ChatRoomScreen() {
           <IconSymbol name="arrow.up.circle.fill" size={32} color="#007AFF" />
         </Pressable>
       </ThemedView>
+
+      {/* Action Menu */}
+      <MessageActionMenu
+        visible={actionMenuVisible}
+        messagePosition={messagePosition}
+        onEdit={handleEditMessage}
+        onDelete={handleDeleteMessage}
+        onDismiss={handleDismissActionMenu}
+      />
+
+      {/* Edit Message Modal */}
+      <EditMessageModal
+        visible={editModalVisible}
+        initialText={selectedMessage?.text || ''}
+        onSave={handleSaveEditedMessage}
+        onCancel={handleCancelEditModal}
+      />
     </KeyboardAvoidingView>
   );
 }

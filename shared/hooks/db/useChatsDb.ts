@@ -5,6 +5,8 @@ import {
   sendMessageToChat,
   getChatMessagesPaginated,
   getUnreadMessageCount,
+  editMessage,
+  deleteMessage,
   type Message,
   type Chat,
 } from "../../database/services/chats";
@@ -174,6 +176,78 @@ export function useChatsDb(currentUserId: string | null) {
     []
   );
 
+  // Function to edit a message
+  const editMessageInChat = useCallback(
+    async (messageId: string, newText: string) => {
+      try {
+        await editMessage(messageId, newText);
+
+        // Update state optimistically
+        setUserChats((prevChats) => {
+          return prevChats.map((chat) => {
+            const updatedMessages = chat.messages.map((message) => {
+              if (message.id === messageId) {
+                return {
+                  ...message,
+                  text: newText,
+                  isEdited: true,
+                };
+              }
+              return message;
+            });
+
+            return {
+              ...chat,
+              messages: updatedMessages,
+              lastMessage:
+                chat.lastMessage?.id === messageId
+                  ? { ...chat.lastMessage, text: newText, isEdited: true }
+                  : chat.lastMessage,
+            };
+          });
+        });
+
+        return true;
+      } catch (error) {
+        console.error("Error editing message:", error);
+        return false;
+      }
+    },
+    []
+  );
+
+  // Function to delete a message
+  const deleteMessageInChat = useCallback(async (messageId: string) => {
+    try {
+      await deleteMessage(messageId);
+
+      // Update state optimistically
+      setUserChats((prevChats) => {
+        return prevChats.map((chat) => {
+          const updatedMessages = chat.messages.map((message) => {
+            if (message.id === messageId) {
+              return {
+                ...message,
+                isDeleted: true,
+              };
+            }
+            return message;
+          });
+
+          return {
+            ...chat,
+            messages: updatedMessages,
+          };
+        });
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      return false;
+    }
+  }, []);
+
   // Function to refresh unread counts
   const refreshUnreadCounts = useCallback(async () => {
     if (!currentUserId) return;
@@ -194,6 +268,8 @@ export function useChatsDb(currentUserId: string | null) {
     unreadCounts,
     createChat,
     sendMessage,
+    editMessage: editMessageInChat,
+    deleteMessage: deleteMessageInChat,
     loadMoreMessages,
     refreshUnreadCounts,
     loading,

@@ -14,6 +14,8 @@ type AppContextType = {
   unreadCounts: Record<string, number>;
   createChat: (participantIds: string[]) => Promise<Chat | null>;
   sendMessage: (chatId: string, text: string, senderId: string) => Promise<boolean>;
+  editMessage: (messageId: string, newText: string) => Promise<boolean>;
+  deleteMessage: (messageId: string) => Promise<boolean>;
   loadMoreMessages: (chatId: string) => Promise<void>;
   refreshUnreadCounts: () => Promise<void>;
   loading: boolean;

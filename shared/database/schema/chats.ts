@@ -30,6 +30,12 @@ export const messages = sqliteTable(
     text: text("text").notNull(),
     timestamp: integer("timestamp").notNull(),
     isRead: integer("is_read", { mode: "boolean" }).notNull().default(false),
+    isDeleted: integer("is_deleted", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    isEdited: integer("is_edited", { mode: "boolean" })
+      .notNull()
+      .default(false),
   },
   (table) => [
     index("messages_chat_timestamp_idx").on(table.chatId, table.timestamp),

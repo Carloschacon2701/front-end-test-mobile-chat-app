@@ -33,6 +33,8 @@ export interface Message {
   text: string;
   timestamp: number;
   isRead: boolean;
+  isDeleted: boolean;
+  isEdited: boolean;
 }
 
 export interface Chat {
@@ -116,6 +118,8 @@ export async function getChatMessages(chatId: string): Promise<Message[]> {
     text: m.text,
     timestamp: m.timestamp,
     isRead: m.isRead,
+    isDeleted: m.isDeleted,
+    isEdited: m.isEdited,
   }));
 }
 
@@ -150,6 +154,8 @@ export async function getRecentMessages(
       text: m.text,
       timestamp: m.timestamp,
       isRead: m.isRead,
+      isDeleted: m.isDeleted,
+      isEdited: m.isEdited,
     }));
   }
 
@@ -169,6 +175,8 @@ export async function getRecentMessages(
     text: m.text,
     timestamp: m.timestamp,
     isRead: m.isRead,
+    isDeleted: m.isDeleted,
+    isEdited: m.isEdited,
   }));
 }
 
@@ -194,6 +202,8 @@ export async function getChatMessagesPaginated(
     text: m.text,
     timestamp: m.timestamp,
     isRead: m.isRead,
+    isDeleted: m.isDeleted,
+    isEdited: m.isEdited,
   }));
 }
 
@@ -373,6 +383,8 @@ export async function sendMessageToChat(
       text,
       timestamp,
       isRead: false,
+      isDeleted: false,
+      isEdited: false,
     };
 
     return newMessage;
@@ -380,4 +392,23 @@ export async function sendMessageToChat(
     console.error("Error sending message:", error);
     return null;
   }
+}
+
+export async function editMessage(
+  messageId: string,
+  text: string
+): Promise<void> {
+  await db
+    .update(messages)
+    .set({ text: text, isEdited: true })
+    .where(eq(messages.id, messageId));
+  invalidateCache(`chat_${messageId}`);
+}
+
+export async function deleteMessage(messageId: string): Promise<void> {
+  await db
+    .update(messages)
+    .set({ isDeleted: true })
+    .where(eq(messages.id, messageId));
+  invalidateCache(`chat_${messageId}`);
 }
