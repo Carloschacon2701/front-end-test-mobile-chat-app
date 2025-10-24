@@ -1,8 +1,4 @@
 import { useChatsDb } from "./useChatsDb";
-import { type Chat } from "../../services/chats";
-import { type Message } from "../../services/chats";
-
-export { Chat, Message };
 
 export function useChats(currentUserId: string | null) {
   const {

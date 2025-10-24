@@ -20,6 +20,7 @@ const queryClient = new QueryClient();
 function RootLayoutNav() {
   const { isLoggedIn, loading } = useAppContext();
 
+
   // Call the hook unconditionally
   useProtectedRoute(isLoggedIn, loading);
 

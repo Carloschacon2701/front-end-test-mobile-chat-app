@@ -1,15 +1,22 @@
 import { useAppContext } from "@/shared/hooks/AppContext";
-import { Chat, Message } from "@/shared/hooks/db/useChats";
 import { useState, useCallback } from "react";
 import { Alert } from "react-native";
+import { type Chat } from "@/shared/services/chats";
+import { type Message } from "@/shared/services/chats";
+import { useGetAllUsers } from "@/shared/hooks/users/useGetAllUsers";
+import { useGetChats } from "@/shared/hooks/chats/useGetChats";
+import { useChatActions } from "@/shared/hooks/chats/useChatActions";
 
 export const useChatRoomActions = (chatId: string) => {
-    const { sendMessage, editMessage, deleteMessage, loadMoreMessages, chats, currentUser, users } = useAppContext()
+    const { loadMoreMessages, currentUser } = useAppContext()
+    const { users } = useGetAllUsers();
+    const { sendMessageMutation, editMessageMutation, deleteMessageMutation } = useChatActions(currentUser?.id || '');
     const [actionMenuVisible, setActionMenuVisible] = useState(false);
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
     const [messagePosition, setMessagePosition] = useState({ x: 0, y: 0 });
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [messageText, setMessageText] = useState('');
+    const { chats } = useGetChats(currentUser?.id || '');
 
     // Simple find operation - no need for useMemo
     const chat = chats.find(c => c.id === chatId) as Chat;
@@ -17,7 +24,11 @@ export const useChatRoomActions = (chatId: string) => {
     // Simple functions - no need for useCallback
     const handleSendMessage = () => {
         if (messageText.trim() && currentUser && chat) {
-            sendMessage(chat.id, messageText.trim(), currentUser.id);
+            sendMessageMutation.mutate({
+                chatId: chat.id,
+                senderId: currentUser.id,
+                text: messageText.trim(),
+            });
             setMessageText('');
         }
     };
@@ -42,13 +53,17 @@ export const useChatRoomActions = (chatId: string) => {
     // Keep useCallback for async operations that depend on selectedMessage
     const handleSaveEditedMessage = useCallback(async (newText: string) => {
         if (selectedMessage) {
-            const success = await editMessage(selectedMessage.id, newText);
-            if (success) {
+            editMessageMutation.mutate({
+                id: selectedMessage.id,
+                text: newText,
+            });
+
+            if (editMessageMutation.isSuccess) {
                 setEditModalVisible(false);
                 setSelectedMessage(null);
             }
         }
-    }, [selectedMessage, editMessage]);
+    }, [selectedMessage]);
 
     const handleDeleteMessage = useCallback(async () => {
         if (selectedMessage) {
@@ -64,8 +79,8 @@ export const useChatRoomActions = (chatId: string) => {
                         text: 'Delete',
                         style: 'destructive',
                         onPress: async () => {
-                            const success = await deleteMessage(selectedMessage.id);
-                            if (success) {
+                            deleteMessageMutation.mutate(selectedMessage.id);
+                            if (deleteMessageMutation.isSuccess) {
                                 setActionMenuVisible(false);
                                 setSelectedMessage(null);
                             }
@@ -74,7 +89,7 @@ export const useChatRoomActions = (chatId: string) => {
                 ]
             );
         }
-    }, [selectedMessage, deleteMessage]);
+    }, [selectedMessage]);
 
     const handleDismissActionMenu = () => {
         setActionMenuVisible(false);

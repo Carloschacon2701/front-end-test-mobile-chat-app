@@ -17,6 +17,9 @@ export interface Chat {
   participants: string[];
   messages: Message[];
   lastMessage?: Message;
+  offset: number;
+  hasMore: boolean;
+  unreadCount: number;
 }
 
 export interface ChatParticipant {
@@ -245,11 +248,16 @@ export class ChatsService {
           ? chatMessages[chatMessages.length - 1]
           : undefined;
 
+      const unreadCount = await this.getUnreadMessageCount(chatId, userId);
+
       loadedChats.push({
         id: chatId,
         participants: participantsByChat[chatId] || [],
         messages: chatMessages,
         lastMessage,
+        offset: chatMessages.length,
+        hasMore: chatMessages.length === 50,
+        unreadCount,
       });
     }
 
@@ -260,10 +268,15 @@ export class ChatsService {
    * Create a new chat with participants
    */
   async createNewChat(
-    chatId: string,
+    currentUserId: string,
     participantIds: string[]
   ): Promise<Chat | null> {
     try {
+      if (!currentUserId || !participantIds.includes(currentUserId)) {
+        return null;
+      }
+
+      const chatId = `chat${Date.now()}`;
       // Insert new chat
       await db.insert(chats).values({
         id: chatId,
@@ -282,7 +295,12 @@ export class ChatsService {
         id: chatId,
         participants: participantIds,
         messages: [],
+        offset: 0,
+        hasMore: false,
+        unreadCount: 0,
       };
+
+      this.invalidateCache(`user_chats_${currentUserId}`);
 
       return newChat;
     } catch (error) {
@@ -357,13 +375,14 @@ export class ChatsService {
    * Send a message to a chat
    */
   async sendMessageToChat(
-    messageId: string,
     chatId: string,
     senderId: string,
-    text: string,
-    timestamp: number
+    text: string
   ): Promise<Message | null> {
     try {
+      const messageId = `msg${Date.now()}`;
+      const timestamp = Date.now();
+
       // Insert new message
       await db.insert(messages).values({
         id: messageId,

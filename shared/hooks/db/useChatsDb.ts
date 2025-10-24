@@ -3,57 +3,11 @@ import { chatsService, type Message, type Chat } from "../../services/chats";
 
 export function useChatsDb(currentUserId: string | null) {
   const [userChats, setUserChats] = useState<Chat[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [messagePagination, setMessagePagination] = useState<
     Record<string, { offset: number; hasMore: boolean }>
   >({});
-
-  // Load chats for the current user
-  useEffect(() => {
-    const loadChats = async () => {
-      if (!currentUserId) {
-        setUserChats([]);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const loadedChats = await chatsService.loadUserChats(currentUserId);
-        setUserChats(loadedChats);
-
-        // Initialize pagination state for each chat
-        const initialPagination: Record<
-          string,
-          { offset: number; hasMore: boolean }
-        > = {};
-        loadedChats.forEach((chat) => {
-          initialPagination[chat.id] = {
-            offset: chat.messages.length,
-            hasMore: chat.messages.length === 50, // Assume more if we got exactly 50
-          };
-        });
-        setMessagePagination(initialPagination);
-
-        // Load unread counts for each chat
-        const unreadCountsData: Record<string, number> = {};
-        for (const chat of loadedChats) {
-          const count = await chatsService.getUnreadMessageCount(
-            chat.id,
-            currentUserId
-          );
-          unreadCountsData[chat.id] = count;
-        }
-        setUnreadCounts(unreadCountsData);
-      } catch (error) {
-        console.error("Error loading chats:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadChats();
-  }, [currentUserId]);
 
   const createChat = useCallback(
     async (participantIds: string[]) => {
@@ -62,9 +16,8 @@ export function useChatsDb(currentUserId: string | null) {
       }
 
       try {
-        const chatId = `chat${Date.now()}`;
         const newChat = await chatsService.createNewChat(
-          chatId,
+          currentUserId,
           participantIds
         );
 
@@ -134,15 +87,10 @@ export function useChatsDb(currentUserId: string | null) {
       if (!text.trim()) return false;
 
       try {
-        const messageId = `msg${Date.now()}`;
-        const timestamp = Date.now();
-
         const newMessage = await chatsService.sendMessageToChat(
-          messageId,
           chatId,
           senderId,
-          text,
-          timestamp
+          text
         );
 
         if (newMessage) {

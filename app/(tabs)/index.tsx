@@ -1,17 +1,24 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { FlatList, StyleSheet, Pressable, Modal } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import { useAppContext } from '@/shared/hooks/AppContext';
 import { ThemedText } from '@/shared/components/ThemedText';
 import { ThemedView } from '@/shared/components/ThemedView';
 import { ChatListItem } from '@/shared/components/ChatListItem';
 import { UserListItem } from '@/shared/components/UserListItem';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
+import { useGetAllUsers } from '@/shared/hooks/users/useGetAllUsers';
+import { useGetChats } from '@/shared/hooks/chats/useGetChats';
+import { useChatActions } from '@/shared/hooks/chats/useChatActions';
+import { Chat } from '@/shared/services/chats';
 
 export default function ChatsScreen() {
-  const { currentUser, users, chats, unreadCounts, createChat, refreshUnreadCounts } = useAppContext();
+  const { currentUser } = useAppContext();
+  const { users } = useGetAllUsers();
+  const { chats } = useGetChats(currentUser?.id || '');
+  const { createChatMutation } = useChatActions(currentUser?.id || '');
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+
 
   const toggleUserSelection = (userId: string) => {
     if (selectedUsers.includes(userId)) {
@@ -21,21 +28,14 @@ export default function ChatsScreen() {
     }
   };
 
-  const handleCreateChat = useCallback(() => {
+  const handleCreateChat = () => {
     if (currentUser && selectedUsers.length > 0) {
       const participants = [currentUser.id, ...selectedUsers];
-      createChat(participants);
+      createChatMutation.mutate(participants);
       setModalVisible(false);
       setSelectedUsers([]);
     }
-  }, [currentUser, selectedUsers, createChat]);
-
-  // Refresh unread counts when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      refreshUnreadCounts();
-    }, [refreshUnreadCounts])
-  );
+  };
 
   const renderEmptyComponent = useCallback(() => (
     <ThemedView style={styles.emptyContainer}>
@@ -46,14 +46,14 @@ export default function ChatsScreen() {
 
   const keyExtractor = useCallback((item: any) => item.id, []);
 
-  const renderChatItem = useCallback(({ item }: { item: any }) => (
+  const renderChatItem = useCallback(({ item }: { item: Chat }) => (
     <ChatListItem
       chat={item}
       currentUserId={currentUser?.id || ''}
       users={users}
-      unreadCount={unreadCounts[item.id] || 0}
+      unreadCount={item.unreadCount}
     />
-  ), [currentUser?.id, users, unreadCounts]);
+  ), [currentUser?.id, users]);
 
   const getItemLayout = useCallback((data: any, index: number) => ({
     length: 74, // Fixed height for chat list items

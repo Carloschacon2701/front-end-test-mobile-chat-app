@@ -1,11 +1,12 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useUser, User } from './db/useUser';
-import { useChats, Chat } from './db/useChats';
+import { useChats } from './db/useChats';
 import { DatabaseProvider } from '../database/context/DatabaseProvider';
 import { useDatabase } from './db/useDatabase';
+import { type Chat } from '../services/chats';
+import { type User } from '../services/user';
+import { useAuth } from './auth/useAuth';
 
 type AppContextType = {
-  users: User[];
   currentUser: User | null;
   isLoggedIn: boolean;
   login: (userId: string) => Promise<boolean>;
@@ -26,13 +27,13 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 function AppContent({ children }: { children: ReactNode }) {
   const { isInitialized } = useDatabase();
-  const userContext = useUser();
-  const chatContext = useChats(userContext.currentUser?.id || null);
+  const authContext = useAuth();
+  const chatContext = useChats(authContext.currentUser?.id || '');
 
-  const loading = !isInitialized || userContext.loading || chatContext.loading;
+  const loading = !isInitialized || chatContext.loading;
 
   const value = {
-    ...userContext,
+    ...authContext,
     ...chatContext,
     loading,
     dbInitialized: isInitialized,

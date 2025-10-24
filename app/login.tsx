@@ -6,9 +6,11 @@ import { useAppContext } from '@/shared/hooks/AppContext';
 import { ThemedText } from '@/shared/components/ThemedText';
 import { ThemedView } from '@/shared/components/ThemedView';
 import { UserListItem } from '@/shared/components/UserListItem';
+import { useGetAllUsers } from '@/shared/hooks/users/useGetAllUsers';
 
 export default function LoginScreen() {
-  const { users, login } = useAppContext();
+  const { login } = useAppContext();
+  const { users } = useGetAllUsers();
   const router = useRouter();
 
   const handleUserSelect = async (userId: string) => {
