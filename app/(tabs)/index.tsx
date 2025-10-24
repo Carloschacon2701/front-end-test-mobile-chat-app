@@ -20,22 +20,30 @@ export default function ChatsScreen() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
 
-  const toggleUserSelection = (userId: string) => {
+  const toggleUserSelection = useCallback((userId: string) => {
     if (selectedUsers.includes(userId)) {
       setSelectedUsers(selectedUsers.filter(id => id !== userId));
     } else {
       setSelectedUsers([...selectedUsers, userId]);
     }
-  };
+  }, [selectedUsers]);
 
-  const handleCreateChat = () => {
+  const handleCreateChat = useCallback(() => {
     if (currentUser && selectedUsers.length > 0) {
       const participants = [currentUser.id, ...selectedUsers];
       createChatMutation.mutate(participants);
       setModalVisible(false);
       setSelectedUsers([]);
     }
-  };
+  }, [currentUser, selectedUsers, createChatMutation]);
+
+
+  const getItemLayout = (data: any, index: number) => ({
+    length: 74, // Fixed height for chat list items
+    offset: 74 * index,
+    index,
+  });
+
 
   const renderEmptyComponent = useCallback(() => (
     <ThemedView style={styles.emptyContainer}>
@@ -44,7 +52,7 @@ export default function ChatsScreen() {
     </ThemedView>
   ), []);
 
-  const keyExtractor = useCallback((item: any) => item.id, []);
+  const keyExtractor = (item: any) => item.id;
 
   const renderChatItem = useCallback(({ item }: { item: Chat }) => (
     <ChatListItem
@@ -54,12 +62,6 @@ export default function ChatsScreen() {
       unreadCount={item.unreadCount}
     />
   ), [currentUser?.id, users]);
-
-  const getItemLayout = useCallback((data: any, index: number) => ({
-    length: 74, // Fixed height for chat list items
-    offset: 74 * index,
-    index,
-  }), []);
 
   return (
     <ThemedView style={styles.container}>
