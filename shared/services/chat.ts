@@ -43,6 +43,8 @@ export class ChatsService {
   }
 
   private invalidateCache(pattern: string): void {
+    console.log("Query cache:", this.queryCache);
+    console.log("Invalidating cache for pattern:", pattern);
     for (const key of this.queryCache.keys()) {
       if (key.includes(pattern)) {
         this.queryCache.delete(key);
@@ -58,7 +60,7 @@ export class ChatsService {
     userId: string,
     filter: string
   ): Promise<Chat[]> {
-    const cacheKey = `user_chats_optimized_${userId}_${filter}`;
+    const cacheKey = `user_chats_${userId}_${filter}`;
     const cached = this.getCachedResult<Chat[]>(cacheKey);
     if (cached) {
       console.log("Returning cached chats:", cached.length);

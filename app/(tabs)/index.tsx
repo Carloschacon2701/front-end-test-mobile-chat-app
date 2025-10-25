@@ -21,7 +21,6 @@ export default function ChatsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const { chats } = useOptimizedChats(searchQuery);
 
-  console.log('chats', chats);
 
   const toggleUserSelection = useCallback((userId: string) => {
     if (selectedUsers.includes(userId)) {

@@ -2,9 +2,9 @@ import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { ThemedText } from './ThemedText';
-import { type Message } from '../services/chats';
 import { useColorScheme } from '../hooks/theme/useColorScheme';
 import { formatTime } from '../utils/timeUtils';
+import { Message } from '../services/chat';
 
 interface MessageBubbleProps {
   message: Message;
