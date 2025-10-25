@@ -5,6 +5,7 @@ import { useGetAllUsers } from "@/shared/hooks/users/useGetAllUsers";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOptimizedChats } from "./useOptimizedChats";
 import { Chat, Message, chatsService } from "@/shared/services/chat";
+import { pickImage, compressImage } from "@/shared/utils/imageUtils";
 
 // State management using useReducer for better performance
 interface ChatRoomState {
@@ -13,6 +14,8 @@ interface ChatRoomState {
     messagePosition: { x: number; y: number };
     editModalVisible: boolean;
     messageText: string;
+    imageViewerVisible: boolean;
+    selectedImageUri: string;
 }
 
 type ChatRoomAction =
@@ -21,7 +24,9 @@ type ChatRoomAction =
     | { type: 'SHOW_EDIT_MODAL' }
     | { type: 'HIDE_EDIT_MODAL' }
     | { type: 'SET_MESSAGE_TEXT'; payload: string }
-    | { type: 'CLEAR_MESSAGE_TEXT' };
+    | { type: 'CLEAR_MESSAGE_TEXT' }
+    | { type: 'SHOW_IMAGE_VIEWER'; payload: string }
+    | { type: 'HIDE_IMAGE_VIEWER' };
 
 const initialState: ChatRoomState = {
     actionMenuVisible: false,
@@ -29,6 +34,8 @@ const initialState: ChatRoomState = {
     messagePosition: { x: 0, y: 0 },
     editModalVisible: false,
     messageText: '',
+    imageViewerVisible: false,
+    selectedImageUri: '',
 };
 
 function chatRoomReducer(state: ChatRoomState, action: ChatRoomAction): ChatRoomState {
@@ -68,6 +75,18 @@ function chatRoomReducer(state: ChatRoomState, action: ChatRoomAction): ChatRoom
                 ...state,
                 messageText: '',
             };
+        case 'SHOW_IMAGE_VIEWER':
+            return {
+                ...state,
+                imageViewerVisible: true,
+                selectedImageUri: action.payload,
+            };
+        case 'HIDE_IMAGE_VIEWER':
+            return {
+                ...state,
+                imageViewerVisible: false,
+                selectedImageUri: '',
+            };
         default:
             return state;
     }
@@ -104,6 +123,29 @@ export const useOptimizedChatRoom = (chatId: string) => {
     const sendMessageMutation = useMutation({
         mutationFn: async (data: { chatId: string, senderId: string, text: string }) => {
             return await chatsService.sendMessageToChat(data.chatId, data.senderId, data.text);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+        }
+    });
+
+    const sendMediaMessageMutation = useMutation({
+        mutationFn: async (data: {
+            chatId: string,
+            senderId: string,
+            text: string,
+            mediaUrl: string,
+            mediaType: string,
+            thumbnailUrl: string
+        }) => {
+            return await chatsService.sendMediaMessage(
+                data.chatId,
+                data.senderId,
+                data.text,
+                data.mediaUrl,
+                data.mediaType,
+                data.thumbnailUrl
+            );
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
@@ -183,6 +225,37 @@ export const useOptimizedChatRoom = (chatId: string) => {
         dispatch({ type: 'SET_MESSAGE_TEXT', payload: text });
     }, []);
 
+    const handlePickImage = useCallback(async () => {
+        try {
+            const imageResult = await pickImage();
+            if (imageResult && currentUser && chat) {
+                const compressedResult = await compressImage(imageResult.uri);
+
+                sendMediaMessageMutation.mutate({
+                    chatId: chat.id,
+                    senderId: currentUser.id,
+                    text: state.messageText.trim() || '📷 Photo',
+                    mediaUrl: compressedResult.originalUri,
+                    mediaType: 'photo',
+                    thumbnailUrl: compressedResult.thumbnailUri,
+                });
+
+                dispatch({ type: 'CLEAR_MESSAGE_TEXT' });
+            }
+        } catch (error) {
+            console.error('Error picking image:', error);
+            Alert.alert('Error', 'Failed to pick image. Please try again.');
+        }
+    }, [currentUser, chat, state.messageText, sendMediaMessageMutation]);
+
+    const handleImagePress = useCallback((imageUri: string) => {
+        dispatch({ type: 'SHOW_IMAGE_VIEWER', payload: imageUri });
+    }, []);
+
+    const handleCloseImageViewer = useCallback(() => {
+        dispatch({ type: 'HIDE_IMAGE_VIEWER' });
+    }, []);
+
     // Memoized computed values
     const chatParticipants = chat?.participants
         .filter(id => id !== currentUser?.id)
@@ -215,5 +288,8 @@ export const useOptimizedChatRoom = (chatId: string) => {
         handleCancelEditModal,
         handleChangeMessageText,
         handleSearch,
+        handlePickImage,
+        handleImagePress,
+        handleCloseImageViewer,
     };
 };

@@ -36,6 +36,9 @@ export const messages = sqliteTable(
     isEdited: integer("is_edited", { mode: "boolean" })
       .notNull()
       .default(false),
+    mediaUrl: text("media_url"),
+    mediaType: text("media_type"),
+    thumbnailUrl: text("thumbnail_url"),
   },
   (table) => [
     index("messages_chat_timestamp_idx").on(table.chatId, table.timestamp),

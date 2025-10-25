@@ -10,6 +10,9 @@ export interface Message {
   isRead: boolean;
   isDeleted: boolean;
   isEdited: boolean;
+  mediaUrl?: string;
+  mediaType?: string;
+  thumbnailUrl?: string;
 }
 
 export interface Chat {
@@ -43,8 +46,6 @@ export class ChatsService {
   }
 
   private invalidateCache(pattern: string): void {
-    console.log("Query cache:", this.queryCache);
-    console.log("Invalidating cache for pattern:", pattern);
     for (const key of this.queryCache.keys()) {
       if (key.includes(pattern)) {
         this.queryCache.delete(key);
@@ -63,11 +64,8 @@ export class ChatsService {
     const cacheKey = `user_chats_${userId}_${filter}`;
     const cached = this.getCachedResult<Chat[]>(cacheKey);
     if (cached) {
-      console.log("Returning cached chats:", cached.length);
       return cached;
     }
-
-    console.log("Loading chats for user:", userId, "with filter:", filter);
 
     // Get chat IDs where the user is a participant, ordered by last message timestamp
     const chatIdsWithLastMessage = await db
@@ -84,10 +82,7 @@ export class ChatsService {
       .groupBy(chatParticipants.chatId)
       .orderBy(desc(sql`COALESCE(MAX(${messages.timestamp}), 0)`));
 
-    console.log("Found chat IDs:", chatIdsWithLastMessage.length);
-
     if (chatIdsWithLastMessage.length === 0) {
-      console.log("No chats found for user");
       return [];
     }
 
@@ -129,6 +124,9 @@ export class ChatsService {
               isRead: lastMessageData[0].isRead,
               isDeleted: lastMessageData[0].isDeleted,
               isEdited: lastMessageData[0].isEdited,
+              mediaUrl: lastMessageData[0].mediaUrl || undefined,
+              mediaType: lastMessageData[0].mediaType || undefined,
+              thumbnailUrl: lastMessageData[0].thumbnailUrl || undefined,
             }
           : undefined;
 
@@ -153,7 +151,6 @@ export class ChatsService {
       });
     }
 
-    console.log("Loaded chats:", loadedChats.length);
     this.setCachedResult(cacheKey, loadedChats);
     return loadedChats;
   }
@@ -186,6 +183,9 @@ export class ChatsService {
       isRead: m.isRead,
       isDeleted: m.isDeleted,
       isEdited: m.isEdited,
+      mediaUrl: m.mediaUrl || undefined,
+      mediaType: m.mediaType || undefined,
+      thumbnailUrl: m.thumbnailUrl || undefined,
     }));
 
     this.setCachedResult(cacheKey, result);
@@ -244,6 +244,9 @@ export class ChatsService {
       isRead: m.isRead,
       isDeleted: m.isDeleted,
       isEdited: m.isEdited,
+      mediaUrl: m.mediaUrl || undefined,
+      mediaType: m.mediaType || undefined,
+      thumbnailUrl: m.thumbnailUrl || undefined,
     }));
   }
 
@@ -267,7 +270,10 @@ export class ChatsService {
   async sendMessageToChat(
     chatId: string,
     senderId: string,
-    text: string
+    text: string,
+    mediaUrl?: string,
+    mediaType?: string,
+    thumbnailUrl?: string
   ): Promise<Message | null> {
     try {
       const messageId = `msg${Date.now()}`;
@@ -280,6 +286,9 @@ export class ChatsService {
         senderId: senderId,
         text: text,
         timestamp: timestamp,
+        mediaUrl: mediaUrl,
+        mediaType: mediaType,
+        thumbnailUrl: thumbnailUrl,
       });
 
       // Invalidate cache for this chat
@@ -293,6 +302,9 @@ export class ChatsService {
         isRead: false,
         isDeleted: false,
         isEdited: false,
+        mediaUrl,
+        mediaType,
+        thumbnailUrl,
       };
 
       return newMessage;
@@ -300,6 +312,24 @@ export class ChatsService {
       console.error("Error sending message:", error);
       return null;
     }
+  }
+
+  async sendMediaMessage(
+    chatId: string,
+    senderId: string,
+    text: string,
+    mediaUrl: string,
+    mediaType: string,
+    thumbnailUrl: string
+  ): Promise<Message | null> {
+    return this.sendMessageToChat(
+      chatId,
+      senderId,
+      text,
+      mediaUrl,
+      mediaType,
+      thumbnailUrl
+    );
   }
 
   async editMessage(messageId: string, text: string): Promise<void> {

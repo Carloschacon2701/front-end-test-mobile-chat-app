@@ -15,6 +15,7 @@ import { ThemedView } from '@/shared/components/ThemedView';
 import { MessageBubble } from '@/shared/components/MessageBubble';
 import { MessageActionMenu } from '@/shared/components/MessageActionMenu';
 import { EditMessageModal } from '@/shared/components/EditMessageModal';
+import { ImageViewer } from '@/shared/components/ImageViewer';
 import { Avatar } from '@/shared/components/Avatar';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
 import { useOptimizedChatRoom } from '@/shared/hooks/chats/useOptimizedChatRoom';
@@ -29,6 +30,8 @@ export default function ChatRoomScreen() {
     selectedMessage,
     messagePosition,
     editModalVisible,
+    imageViewerVisible,
+    selectedImageUri,
     chatParticipants,
     handleChangeMessageText,
     messageText,
@@ -41,6 +44,9 @@ export default function ChatRoomScreen() {
     handleDeleteMessage,
     handleDismissActionMenu,
     handleCancelEditModal,
+    handlePickImage,
+    handleImagePress,
+    handleCloseImageViewer,
   } = useOptimizedChatRoom(chatId);
 
   const keyExtractor = useCallback((item: any) => item.id, []);
@@ -56,8 +62,9 @@ export default function ChatRoomScreen() {
       message={item}
       isCurrentUser={item.senderId === currentUser?.id}
       onLongPress={handleMessageLongPress}
+      onImagePress={handleImagePress}
     />
-  ), [currentUser?.id, handleMessageLongPress]);
+  ), [currentUser?.id, handleMessageLongPress, handleImagePress]);
 
   useEffect(() => {
     if (chat?.messages.length && flatListRef.current) {
@@ -133,6 +140,9 @@ export default function ChatRoomScreen() {
       />
 
       <ThemedView style={styles.inputContainer}>
+        <Pressable style={styles.imageButton} onPress={handlePickImage}>
+          <IconSymbol name="camera" size={24} color="#007AFF" />
+        </Pressable>
         <TextInput
           style={styles.input}
           value={messageText}
@@ -164,6 +174,13 @@ export default function ChatRoomScreen() {
         initialText={selectedMessage?.text || ''}
         onSave={handleSaveEditedMessage}
         onCancel={handleCancelEditModal}
+      />
+
+      {/* Image Viewer */}
+      <ImageViewer
+        visible={imageViewerVisible}
+        imageUri={selectedImageUri}
+        onClose={handleCloseImageViewer}
       />
     </KeyboardAvoidingView>
   );
@@ -199,6 +216,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     borderTopWidth: 1,
     borderTopColor: '#E1E1E1',
+  },
+  imageButton: {
+    marginRight: 10,
+    marginBottom: 5,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
   },
   input: {
     flex: 1,

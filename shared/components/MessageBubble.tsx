@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, Image } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { ThemedText } from './ThemedText';
 import { useColorScheme } from '../hooks/theme/useColorScheme';
@@ -10,9 +10,10 @@ interface MessageBubbleProps {
   message: Message;
   isCurrentUser: boolean;
   onLongPress?: (message: Message, position: { x: number; y: number }) => void;
+  onImagePress?: (imageUri: string) => void;
 }
 
-const MessageBubble = React.memo(({ message, isCurrentUser, onLongPress }: MessageBubbleProps) => {
+const MessageBubble = React.memo(({ message, isCurrentUser, onLongPress, onImagePress }: MessageBubbleProps) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
@@ -21,6 +22,12 @@ const MessageBubble = React.memo(({ message, isCurrentUser, onLongPress }: Messa
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const { pageX, pageY } = event.nativeEvent;
       onLongPress(message, { x: pageX, y: pageY });
+    }
+  };
+
+  const handleImagePress = () => {
+    if (onImagePress && message.mediaUrl) {
+      onImagePress(message.mediaUrl);
     }
   };
 
@@ -62,12 +69,23 @@ const MessageBubble = React.memo(({ message, isCurrentUser, onLongPress }: Messa
           ? [styles.selfBubble, { backgroundColor: isDark ? '#235A4A' : '#DCF8C6' }]
           : [styles.otherBubble, { backgroundColor: isDark ? '#2A2C33' : '#FFFFFF' }]
       ]}>
-        <ThemedText style={[
-          styles.messageText,
-          isCurrentUser && !isDark && styles.selfMessageText
-        ]}>
-          {message.text}
-        </ThemedText>
+        {message.mediaUrl && message.thumbnailUrl && (
+          <Pressable onPress={handleImagePress} style={styles.imageContainer}>
+            <Image
+              source={{ uri: message.thumbnailUrl }}
+              style={styles.messageImage}
+              resizeMode="cover"
+            />
+          </Pressable>
+        )}
+        {message.text && (
+          <ThemedText style={[
+            styles.messageText,
+            isCurrentUser && !isDark && styles.selfMessageText
+          ]}>
+            {message.text}
+          </ThemedText>
+        )}
         <View style={styles.timeContainer}>
           <ThemedText style={styles.timeText}>
             {formatTime(message.timestamp)}
@@ -147,5 +165,15 @@ const styles = StyleSheet.create({
   deletedText: {
     fontSize: 14,
     fontStyle: 'italic',
+  },
+  imageContainer: {
+    marginBottom: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 12,
   },
 }); 

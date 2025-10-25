@@ -13,12 +13,9 @@ export const useOptimizedChats = (filter: string = '') => {
         queryKey: ['chats', filter],
         queryFn: async () => {
             if (!currentUser?.id) {
-                console.log('No current user ID');
                 return [];
             }
-            console.log('Loading chats for user:', currentUser.id);
             const result = await chatsService.loadUserChatsOptimized(currentUser.id, filter);
-            console.log('Hook received chats:', result.length);
             return result;
         },
         enabled: !!currentUser?.id,
