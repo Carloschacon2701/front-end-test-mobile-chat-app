@@ -17,8 +17,8 @@ import { MessageActionMenu } from '@/shared/components/MessageActionMenu';
 import { EditMessageModal } from '@/shared/components/EditMessageModal';
 import { Avatar } from '@/shared/components/Avatar';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
-import { chatsService, } from '@/shared/services/chats';
-import { useChatRoomActions } from '@/shared/hooks/chats/useChatRoomActions';
+import { useOptimizedChatRoom } from '@/shared/hooks/chats/useOptimizedChatRoom';
+import { chatsService } from '@/shared/services/chat';
 
 export default function ChatRoomScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
@@ -41,7 +41,7 @@ export default function ChatRoomScreen() {
     handleDeleteMessage,
     handleDismissActionMenu,
     handleCancelEditModal,
-  } = useChatRoomActions(chatId);
+  } = useOptimizedChatRoom(chatId);
 
   const keyExtractor = useCallback((item: any) => item.id, []);
 

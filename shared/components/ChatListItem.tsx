@@ -4,7 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { Avatar } from './Avatar';
 import { ThemedText } from './ThemedText';
 import { type User } from '../services/user';
-import { type Chat } from '../services/chats';
+import { formatChatTime } from '../utils/timeUtils';
+import { Chat } from '../services/chat';
 
 interface ChatListItemProps {
   chat: Chat;
@@ -40,20 +41,7 @@ const ChatListItem = React.memo(({ chat, currentUserId, users, unreadCount = 0, 
 
   const timeString = useMemo(() => {
     if (!chat.lastMessage) return '';
-
-    const date = new Date(chat.lastMessage.timestamp);
-    const now = new Date();
-    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (diffInDays === 0) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else if (diffInDays === 1) {
-      return 'Yesterday';
-    } else if (diffInDays < 7) {
-      return date.toLocaleDateString([], { weekday: 'short' });
-    } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    }
+    return formatChatTime(chat.lastMessage.timestamp);
   }, [chat.lastMessage]);
 
   const isCurrentUserLastSender = chat.lastMessage?.senderId === currentUserId;

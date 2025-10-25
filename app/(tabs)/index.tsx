@@ -7,10 +7,10 @@ import { ChatListItem } from '@/shared/components/ChatListItem';
 import { UserListItem } from '@/shared/components/UserListItem';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
 import { useGetAllUsers } from '@/shared/hooks/users/useGetAllUsers';
-import { useGetChats } from '@/shared/hooks/chats/useGetChats';
-import { Chat } from '@/shared/services/chats';
+import { useOptimizedChats } from '@/shared/hooks/chats/useOptimizedChats';
 import { useUserListActions } from '@/shared/hooks/chats/useUserListActions';
 import { router } from 'expo-router';
+import { Chat } from '@/shared/services/chat';
 
 export default function ChatsScreen() {
   const { currentUser } = useAppContext();
@@ -19,7 +19,9 @@ export default function ChatsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const { chats } = useGetChats(searchQuery);
+  const { chats } = useOptimizedChats(searchQuery);
+
+  console.log('chats', chats);
 
   const toggleUserSelection = useCallback((userId: string) => {
     if (selectedUsers.includes(userId)) {
@@ -33,7 +35,7 @@ export default function ChatsScreen() {
     if (currentUser && selectedUsers.length > 0) {
       const participants = [currentUser.id, ...selectedUsers];
 
-      const existingChat = chats.find(chat => chat.participants.every(participant => participants.includes(participant)));
+      const existingChat = chats.find((chat: Chat) => chat.participants.every((participant: string) => participants.includes(participant)));
 
       if (existingChat) {
         setModalVisible(false);
@@ -83,7 +85,7 @@ export default function ChatsScreen() {
       return chats;
     }
     // Show all chats, but ChatListItem will show which ones have matching messages
-    return chats.filter(chat => chat.messages.length > 0);
+    return chats.filter((chat: Chat) => chat.messages.length > 0);
   }, [chats, searchQuery]);
 
   return (

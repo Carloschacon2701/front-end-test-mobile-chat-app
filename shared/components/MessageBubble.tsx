@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { ThemedText } from '@/shared/components/ThemedText';
-import { type Message } from '@/shared/services/chats';
-import { useColorScheme } from '@/shared/hooks/theme/useColorScheme';
+import { ThemedText } from './ThemedText';
+import { type Message } from '../services/chats';
+import { useColorScheme } from '../hooks/theme/useColorScheme';
+import { formatTime } from '../utils/timeUtils';
 
 interface MessageBubbleProps {
   message: Message;
@@ -14,11 +15,6 @@ interface MessageBubbleProps {
 const MessageBubble = React.memo(({ message, isCurrentUser, onLongPress }: MessageBubbleProps) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-
-  const formatTime = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
 
   const handleLongPress = (event: any) => {
     if (onLongPress && isCurrentUser) {

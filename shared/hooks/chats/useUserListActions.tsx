@@ -1,5 +1,5 @@
 import { useAppContext } from '@/shared/hooks/AppContext';
-import { chatsService } from '@/shared/services/chats';
+import { chatsService } from '@/shared/services/chat';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export const useUserListActions = () => {
