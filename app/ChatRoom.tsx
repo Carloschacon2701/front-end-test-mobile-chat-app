@@ -18,7 +18,7 @@ import { EditMessageModal } from '@/shared/components/EditMessageModal';
 import { Avatar } from '@/shared/components/Avatar';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
 import { chatsService, Chat, Message } from '@/shared/services/chats';
-import { useChatRoomActions } from '@/modules/chatRoom/hooks/useChatRoomActions';
+import { useChatRoomActions } from '@/shared/hooks/chats/useChatRoomActions';
 
 export default function ChatRoomScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
@@ -33,8 +33,8 @@ export default function ChatRoomScreen() {
     handleChangeMessageText,
     messageText,
     chatName,
-    currentUser, chat,
-    handleLoadMore,
+    currentUser,
+    chat,
     handleMessageLongPress,
     handleEditMessage,
     handleSaveEditedMessage,
@@ -122,7 +122,7 @@ export default function ChatRoomScreen() {
         maxToRenderPerBatch={10}
         windowSize={10}
         removeClippedSubviews={true}
-        onEndReached={handleLoadMore}
+        // onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         contentContainerStyle={styles.messagesContainer}
         ListEmptyComponent={() => (

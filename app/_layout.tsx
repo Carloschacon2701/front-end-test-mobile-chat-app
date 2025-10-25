@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, usePathname, useSegments, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
@@ -19,7 +19,6 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { isLoggedIn, loading } = useAppContext();
-
 
   // Call the hook unconditionally
   useProtectedRoute(isLoggedIn, loading);

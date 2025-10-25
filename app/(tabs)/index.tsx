@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { FlatList, StyleSheet, Pressable, Modal } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { FlatList, StyleSheet, Pressable, Modal, TextInput } from 'react-native';
 import { useAppContext } from '@/shared/hooks/AppContext';
 import { ThemedText } from '@/shared/components/ThemedText';
 import { ThemedView } from '@/shared/components/ThemedView';
@@ -8,17 +8,18 @@ import { UserListItem } from '@/shared/components/UserListItem';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
 import { useGetAllUsers } from '@/shared/hooks/users/useGetAllUsers';
 import { useGetChats } from '@/shared/hooks/chats/useGetChats';
-import { useChatActions } from '@/shared/hooks/chats/useChatActions';
 import { Chat } from '@/shared/services/chats';
+import { useUserListActions } from '@/shared/hooks/chats/useUserListActions';
+import { router } from 'expo-router';
 
 export default function ChatsScreen() {
   const { currentUser } = useAppContext();
   const { users } = useGetAllUsers();
-  const { chats } = useGetChats(currentUser?.id || '');
-  const { createChatMutation } = useChatActions(currentUser?.id || '');
+  const { createChatMutation } = useUserListActions();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-
+  const [searchQuery, setSearchQuery] = useState('');
+  const { chats } = useGetChats(searchQuery);
 
   const toggleUserSelection = useCallback((userId: string) => {
     if (selectedUsers.includes(userId)) {
@@ -31,12 +32,21 @@ export default function ChatsScreen() {
   const handleCreateChat = useCallback(() => {
     if (currentUser && selectedUsers.length > 0) {
       const participants = [currentUser.id, ...selectedUsers];
+
+      const existingChat = chats.find(chat => chat.participants.every(participant => participants.includes(participant)));
+
+      if (existingChat) {
+        setModalVisible(false);
+        setSelectedUsers([]);
+        router.push(`/ChatRoom?chatId=${existingChat.id}`);
+        return;
+      }
+
       createChatMutation.mutate(participants);
       setModalVisible(false);
       setSelectedUsers([]);
     }
   }, [currentUser, selectedUsers, createChatMutation]);
-
 
   const getItemLayout = (data: any, index: number) => ({
     length: 74, // Fixed height for chat list items
@@ -44,6 +54,9 @@ export default function ChatsScreen() {
     index,
   });
 
+  const handleSearch = (text: string) => {
+    setSearchQuery(text);
+  };
 
   const renderEmptyComponent = useCallback(() => (
     <ThemedView style={styles.emptyContainer}>
@@ -74,6 +87,13 @@ export default function ChatsScreen() {
           <IconSymbol name="plus" size={24} color="#007AFF" />
         </Pressable>
       </ThemedView>
+
+      <TextInput
+        placeholder="Search chats"
+        style={styles.searchInput}
+        value={searchQuery}
+        onChangeText={handleSearch}
+      />
 
       <FlatList
         data={chats}
@@ -174,6 +194,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     marginTop: 40,
+  },
+  searchButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+  },
+  searchInput: {
+    height: 40,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#E1E1E1',
+    marginHorizontal: 20,
+    marginBottom: 10,
   },
   emptyText: {
     fontSize: 18,

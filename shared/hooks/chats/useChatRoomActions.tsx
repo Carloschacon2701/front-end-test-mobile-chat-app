@@ -1,22 +1,51 @@
 import { useAppContext } from "@/shared/hooks/AppContext";
 import { useState, useCallback } from "react";
 import { Alert } from "react-native";
-import { type Chat } from "@/shared/services/chats";
+import { chatsService, type Chat } from "@/shared/services/chats";
 import { type Message } from "@/shared/services/chats";
 import { useGetAllUsers } from "@/shared/hooks/users/useGetAllUsers";
 import { useGetChats } from "@/shared/hooks/chats/useGetChats";
-import { useChatActions } from "@/shared/hooks/chats/useChatActions";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const useChatRoomActions = (chatId: string) => {
-    const { loadMoreMessages, currentUser } = useAppContext()
+    const { currentUser } = useAppContext()
     const { users } = useGetAllUsers();
-    const { sendMessageMutation, editMessageMutation, deleteMessageMutation } = useChatActions(currentUser?.id || '');
     const [actionMenuVisible, setActionMenuVisible] = useState(false);
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
     const [messagePosition, setMessagePosition] = useState({ x: 0, y: 0 });
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [messageText, setMessageText] = useState('');
-    const { chats } = useGetChats(currentUser?.id || '');
+    const [filter, setFilter] = useState('');
+    const { chats } = useGetChats(filter);
+
+    const queryClient = useQueryClient();
+
+    const deleteMessageMutation = useMutation({
+        mutationFn: async (messageId: string) => {
+            return await chatsService.deleteMessage(messageId);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+        }
+    });
+
+    const editMessageMutation = useMutation({
+        mutationFn: async (data: { id: string, text: string }) => {
+            return await chatsService.editMessage(data.id, data.text);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+        }
+    });
+
+    const sendMessageMutation = useMutation({
+        mutationFn: async (data: { chatId: string, senderId: string, text: string }) => {
+            return await chatsService.sendMessageToChat(data.chatId, data.senderId, data.text);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+        }
+    });
 
     // Simple find operation - no need for useMemo
     const chat = chats.find(c => c.id === chatId) as Chat;
@@ -33,11 +62,7 @@ export const useChatRoomActions = (chatId: string) => {
         }
     };
 
-    const handleLoadMore = () => {
-        if (chatId) {
-            loadMoreMessages(chatId);
-        }
-    };
+
 
     const handleMessageLongPress = (message: Message, position: { x: number; y: number }) => {
         setSelectedMessage(message);
@@ -111,6 +136,10 @@ export const useChatRoomActions = (chatId: string) => {
         .map(id => users.find(user => user.id === id))
         .filter(Boolean) || [];
 
+    const handleSearch = (text: string) => {
+        setFilter(text);
+    };
+
     const chatName = chatParticipants.length === 1
         ? chatParticipants[0]?.name
         : `${chatParticipants[0]?.name || 'Unknown'} & ${chatParticipants.length - 1} other${chatParticipants.length > 1 ? 's' : ''}`;
@@ -118,7 +147,6 @@ export const useChatRoomActions = (chatId: string) => {
 
     return {
         handleSendMessage,
-        handleLoadMore,
         handleMessageLongPress,
         handleEditMessage,
         handleSaveEditedMessage,
@@ -139,5 +167,6 @@ export const useChatRoomActions = (chatId: string) => {
         currentUser,
         chatParticipants,
         chatName,
+        handleSearch,
     }
 }

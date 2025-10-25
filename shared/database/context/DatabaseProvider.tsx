@@ -8,16 +8,18 @@ interface DatabaseContextType {
   error: Error | null;
 }
 
+interface DatabaseProviderProps {
+  children: ReactNode;
+}
+
+
 const DatabaseContext = createContext<DatabaseContextType>({
   isInitialized: false,
   error: null,
 });
 
-export const useDatabaseStatus = () => useContext(DatabaseContext);
+export const useDatabase = () => useContext(DatabaseContext);
 
-interface DatabaseProviderProps {
-  children: ReactNode;
-}
 
 export function DatabaseProvider({ children }: DatabaseProviderProps) {
   const [isInitialized, setIsInitialized] = useState(false);

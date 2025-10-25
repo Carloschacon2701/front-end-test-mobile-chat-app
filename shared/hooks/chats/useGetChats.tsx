@@ -1,10 +1,12 @@
+import { useAppContext } from '@/shared/hooks/AppContext';
 import { chatsService } from '@/shared/services/chats'
 import { useQuery } from '@tanstack/react-query'
 
-export const useGetChats = (userId: string) => {
+export const useGetChats = (filter: string = '') => {
+    const { currentUser } = useAppContext();
     const { data, isLoading, error } = useQuery({
-        queryKey: ['chats'],
-        queryFn: async () => await chatsService.loadUserChats(userId),
+        queryKey: ['chats', filter],
+        queryFn: async () => await chatsService.loadUserChats(currentUser?.id || '', filter),
     })
 
     return {

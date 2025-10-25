@@ -134,13 +134,19 @@ export class ChatsService {
    */
   async getRecentMessages(
     chatId: string,
-    limit: number = 50
+    limit: number = 50,
+    filter: string
   ): Promise<Message[]> {
     // Get total message count for this chat
     const totalCount = await db
       .select({ count: sql<number>`count(*)` })
       .from(messages)
-      .where(eq(messages.chatId, chatId));
+      .where(
+        and(
+          eq(messages.chatId, chatId),
+          sql`LOWER(${messages.text}) LIKE LOWER(${`%${filter}%`})`
+        )
+      );
 
     const total = totalCount[0]?.count || 0;
 
@@ -149,7 +155,12 @@ export class ChatsService {
       const messagesData = await db
         .select()
         .from(messages)
-        .where(eq(messages.chatId, chatId))
+        .where(
+          and(
+            eq(messages.chatId, chatId),
+            sql`LOWER(${messages.text}) LIKE LOWER(${`%${filter}%`})`
+          )
+        )
         .orderBy(messages.timestamp);
 
       return messagesData.map((m) => ({
@@ -168,7 +179,12 @@ export class ChatsService {
     const messagesData = await db
       .select()
       .from(messages)
-      .where(eq(messages.chatId, chatId))
+      .where(
+        and(
+          eq(messages.chatId, chatId),
+          sql`LOWER(${messages.text}) LIKE LOWER(${`%${filter}%`})`
+        )
+      )
       .orderBy(messages.timestamp)
       .offset(offset)
       .limit(limit);
@@ -190,7 +206,8 @@ export class ChatsService {
   async getChatMessagesPaginated(
     chatId: string,
     offset: number = 0,
-    limit: number = 50
+    limit: number = 50,
+    filter: string
   ): Promise<Message[]> {
     const messagesData = await db
       .select()
@@ -215,7 +232,7 @@ export class ChatsService {
    * Load all chats for a user with their recent messages and participants
    * Optimized with batch queries to reduce N+1 problem
    */
-  async loadUserChats(userId: string): Promise<Chat[]> {
+  async loadUserChats(userId: string, filter: string): Promise<Chat[]> {
     // Get chat IDs where the user is a participant
     const chatIds = await this.getUserChatIds(userId);
 
@@ -241,7 +258,7 @@ export class ChatsService {
     // For each chat, get the recent messages using the optimized function
     const loadedChats: Chat[] = [];
     for (const chatId of chatIds) {
-      const chatMessages = await this.getRecentMessages(chatId, 50);
+      const chatMessages = await this.getRecentMessages(chatId, 50, filter);
 
       const lastMessage =
         chatMessages.length > 0
@@ -426,6 +443,14 @@ export class ChatsService {
       .set({ isDeleted: true })
       .where(eq(messages.id, messageId));
     this.invalidateCache(`chat_${messageId}`);
+  }
+
+  async deleteChat(chatId: string): Promise<void> {
+    await db.delete(chats).where(eq(chats.id, chatId));
+    await db
+      .delete(chatParticipants)
+      .where(eq(chatParticipants.chatId, chatId));
+    this.invalidateCache(`chat_${chatId}`);
   }
 }
 
