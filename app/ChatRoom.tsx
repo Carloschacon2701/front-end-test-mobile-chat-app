@@ -17,7 +17,7 @@ import { MessageActionMenu } from '@/shared/components/MessageActionMenu';
 import { EditMessageModal } from '@/shared/components/EditMessageModal';
 import { Avatar } from '@/shared/components/Avatar';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
-import { chatsService, Chat, Message } from '@/shared/services/chats';
+import { chatsService, } from '@/shared/services/chats';
 import { useChatRoomActions } from '@/shared/hooks/chats/useChatRoomActions';
 
 export default function ChatRoomScreen() {

@@ -137,31 +137,14 @@ export class ChatsService {
     limit: number = 50,
     filter: string
   ): Promise<Message[]> {
-    // Get total message count for this chat
-    const totalCount = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(messages)
-      .where(
-        and(
-          eq(messages.chatId, chatId),
-          sql`LOWER(${messages.text}) LIKE LOWER(${`%${filter}%`})`
-        )
-      );
-
-    const total = totalCount[0]?.count || 0;
-
-    // If we have fewer messages than the limit, just get all messages
-    if (total <= limit) {
+    // If no filter, get all recent messages
+    if (!filter) {
       const messagesData = await db
         .select()
         .from(messages)
-        .where(
-          and(
-            eq(messages.chatId, chatId),
-            sql`LOWER(${messages.text}) LIKE LOWER(${`%${filter}%`})`
-          )
-        )
-        .orderBy(messages.timestamp);
+        .where(eq(messages.chatId, chatId))
+        .orderBy(messages.timestamp)
+        .limit(limit);
 
       return messagesData.map((m) => ({
         id: m.id,
@@ -174,8 +157,7 @@ export class ChatsService {
       }));
     }
 
-    // Otherwise, get the last 'limit' messages using offset
-    const offset = total - limit;
+    // With filter, get all matching messages
     const messagesData = await db
       .select()
       .from(messages)
@@ -185,9 +167,7 @@ export class ChatsService {
           sql`LOWER(${messages.text}) LIKE LOWER(${`%${filter}%`})`
         )
       )
-      .orderBy(messages.timestamp)
-      .offset(offset)
-      .limit(limit);
+      .orderBy(messages.timestamp);
 
     return messagesData.map((m) => ({
       id: m.id,
@@ -230,15 +210,29 @@ export class ChatsService {
 
   /**
    * Load all chats for a user with their recent messages and participants
-   * Optimized with batch queries to reduce N+1 problem
+   * Optimized with database-level ordering by last message timestamp
    */
   async loadUserChats(userId: string, filter: string): Promise<Chat[]> {
-    // Get chat IDs where the user is a participant
-    const chatIds = await this.getUserChatIds(userId);
+    // Get chat IDs where the user is a participant, ordered by last message timestamp
+    const chatIdsWithLastMessage = await db
+      .select({
+        chatId: chatParticipants.chatId,
+        lastMessageTimestamp:
+          sql<number>`COALESCE(MAX(${messages.timestamp}), 0)`.as(
+            "lastMessageTimestamp"
+          ),
+      })
+      .from(chatParticipants)
+      .leftJoin(messages, eq(chatParticipants.chatId, messages.chatId))
+      .where(eq(chatParticipants.userId, userId))
+      .groupBy(chatParticipants.chatId)
+      .orderBy(desc(sql`COALESCE(MAX(${messages.timestamp}), 0)`));
 
-    if (chatIds.length === 0) {
+    if (chatIdsWithLastMessage.length === 0) {
       return [];
     }
+
+    const chatIds = chatIdsWithLastMessage.map((row) => row.chatId);
 
     // Batch fetch all participants for all chats at once
     const allParticipants = await db
@@ -258,12 +252,29 @@ export class ChatsService {
     // For each chat, get the recent messages using the optimized function
     const loadedChats: Chat[] = [];
     for (const chatId of chatIds) {
-      const chatMessages = await this.getRecentMessages(chatId, 50, filter);
+      // Always get the last message without filter for the chat preview
+      const lastMessageData = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.chatId, chatId))
+        .orderBy(desc(messages.timestamp))
+        .limit(1);
 
       const lastMessage =
-        chatMessages.length > 0
-          ? chatMessages[chatMessages.length - 1]
+        lastMessageData.length > 0
+          ? {
+              id: lastMessageData[0].id,
+              senderId: lastMessageData[0].senderId,
+              text: lastMessageData[0].text,
+              timestamp: lastMessageData[0].timestamp,
+              isRead: lastMessageData[0].isRead,
+              isDeleted: lastMessageData[0].isDeleted,
+              isEdited: lastMessageData[0].isEdited,
+            }
           : undefined;
+
+      // Get filtered messages if filter is provided, otherwise get recent messages
+      const chatMessages = await this.getRecentMessages(chatId, 50, filter);
 
       const unreadCount = await this.getUnreadMessageCount(chatId, userId);
 

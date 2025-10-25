@@ -11,9 +11,10 @@ interface ChatListItemProps {
   currentUserId: string;
   users: User[];
   unreadCount?: number;
+  searchQuery?: string;
 }
 
-const ChatListItem = React.memo(({ chat, currentUserId, users, unreadCount = 0 }: ChatListItemProps) => {
+const ChatListItem = React.memo(({ chat, currentUserId, users, unreadCount = 0, searchQuery = '' }: ChatListItemProps) => {
   const navigation = useNavigation();
 
   const otherParticipants = useMemo(() => {
@@ -57,6 +58,24 @@ const ChatListItem = React.memo(({ chat, currentUserId, users, unreadCount = 0 }
 
   const isCurrentUserLastSender = chat.lastMessage?.senderId === currentUserId;
 
+  // Find matching messages for search
+  const matchingMessages = useMemo(() => {
+    if (!searchQuery) return [];
+    const query = searchQuery.toLowerCase();
+    return chat.messages.filter(msg =>
+      msg.text.toLowerCase().includes(query) && !msg.isDeleted
+    );
+  }, [chat.messages, searchQuery]);
+
+  // Get the preview text to show
+  const previewText = useMemo(() => {
+    if (searchQuery && matchingMessages.length > 0) {
+      const matchCount = matchingMessages.length;
+      return `${matchCount} message${matchCount > 1 ? 's' : ''} match your search`;
+    }
+    return chat.lastMessage ? chat.lastMessage.text : '';
+  }, [searchQuery, matchingMessages.length, chat.lastMessage]);
+
   return (
     <Pressable style={styles.container} onPress={handlePress}>
       <Avatar
@@ -73,18 +92,19 @@ const ChatListItem = React.memo(({ chat, currentUserId, users, unreadCount = 0 }
           )}
         </View>
         <View style={styles.bottomRow}>
-          {chat.lastMessage && (
+          {previewText && (
             <ThemedText
               numberOfLines={1}
               style={[
                 styles.lastMessage,
-                isCurrentUserLastSender && styles.currentUserMessage
+                isCurrentUserLastSender && !searchQuery && styles.currentUserMessage,
+                searchQuery && matchingMessages.length > 0 && styles.searchMatch
               ]}
             >
-              {isCurrentUserLastSender && 'You: '}{chat.lastMessage.text}
+              {isCurrentUserLastSender && !searchQuery && 'You: '}{previewText}
             </ThemedText>
           )}
-          {unreadCount > 0 && (
+          {unreadCount > 0 && !searchQuery && (
             <View style={styles.unreadBadge}>
               <ThemedText style={styles.unreadText}>
                 {unreadCount > 99 ? '99+' : unreadCount}
@@ -137,6 +157,10 @@ const styles = StyleSheet.create({
   },
   currentUserMessage: {
     fontStyle: 'italic',
+  },
+  searchMatch: {
+    color: '#007AFF',
+    fontWeight: '500',
   },
   unreadBadge: {
     backgroundColor: '#007AFF',

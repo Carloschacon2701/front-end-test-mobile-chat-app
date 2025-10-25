@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { FlatList, StyleSheet, Pressable, Modal, TextInput } from 'react-native';
 import { useAppContext } from '@/shared/hooks/AppContext';
 import { ThemedText } from '@/shared/components/ThemedText';
@@ -73,8 +73,18 @@ export default function ChatsScreen() {
       currentUserId={currentUser?.id || ''}
       users={users}
       unreadCount={item.unreadCount}
+      searchQuery={searchQuery}
     />
-  ), [currentUser?.id, users]);
+  ), [currentUser?.id, users, searchQuery]);
+
+  // Filter chats based on search query
+  const filteredChats = useMemo(() => {
+    if (!searchQuery) {
+      return chats;
+    }
+    // Show all chats, but ChatListItem will show which ones have matching messages
+    return chats.filter(chat => chat.messages.length > 0);
+  }, [chats, searchQuery]);
 
   return (
     <ThemedView style={styles.container}>
@@ -96,7 +106,7 @@ export default function ChatsScreen() {
       />
 
       <FlatList
-        data={chats}
+        data={filteredChats}
         keyExtractor={keyExtractor}
         renderItem={renderChatItem}
         getItemLayout={getItemLayout}
