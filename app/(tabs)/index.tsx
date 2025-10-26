@@ -7,10 +7,10 @@ import { ChatListItem } from '@/shared/components/ChatListItem';
 import { UserListItem } from '@/shared/components/UserListItem';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
 import { useGetAllUsers } from '@/shared/hooks/users/useGetAllUsers';
-import { useOptimizedChats } from '@/shared/hooks/chats/useOptimizedChats';
 import { useUserListActions } from '@/shared/hooks/chats/useUserListActions';
 import { router } from 'expo-router';
-import { Chat } from '@/shared/services/chat';
+import { ChatListItemType } from '@/shared/services/chat';
+import { useGetChatList } from '@/shared/hooks/chats/useGetChatList';
 
 export default function ChatsScreen() {
   const { currentUser } = useAppContext();
@@ -19,7 +19,7 @@ export default function ChatsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const { chats } = useOptimizedChats(searchQuery);
+  const { chats } = useGetChatList(searchQuery);
 
 
   const toggleUserSelection = useCallback((userId: string) => {
@@ -34,7 +34,12 @@ export default function ChatsScreen() {
     if (currentUser && selectedUsers.length > 0) {
       const participants = [currentUser.id, ...selectedUsers];
 
-      const existingChat = chats.find((chat: Chat) => chat.participants.every((participant: string) => participants.includes(participant)));
+      const existingChat = chats.find((chat: ChatListItemType) => {
+        const chatParticipantIds = chat.participants.map((p: { id: string | null }) => p.id).filter(Boolean) as string[];
+
+        return chatParticipantIds.length === participants.length &&
+          chatParticipantIds.every((id: string) => participants.includes(id));
+      });
 
       if (existingChat) {
         setModalVisible(false);
@@ -68,7 +73,7 @@ export default function ChatsScreen() {
 
   const keyExtractor = (item: any) => item.id;
 
-  const renderChatItem = useCallback(({ item }: { item: Chat }) => (
+  const renderChatItem = useCallback(({ item }: { item: ChatListItemType }) => (
     <ChatListItem
       chat={item}
       currentUserId={currentUser?.id || ''}
@@ -78,14 +83,6 @@ export default function ChatsScreen() {
     />
   ), [currentUser?.id, users, searchQuery]);
 
-  // Filter chats based on search query
-  const filteredChats = useMemo(() => {
-    if (!searchQuery) {
-      return chats;
-    }
-    // Show all chats, but ChatListItem will show which ones have matching messages
-    return chats.filter((chat: Chat) => chat.messages.length > 0);
-  }, [chats, searchQuery]);
 
   return (
     <ThemedView style={styles.container}>
@@ -107,7 +104,7 @@ export default function ChatsScreen() {
       />
 
       <FlatList
-        data={filteredChats}
+        data={chats}
         keyExtractor={keyExtractor}
         renderItem={renderChatItem}
         getItemLayout={getItemLayout}

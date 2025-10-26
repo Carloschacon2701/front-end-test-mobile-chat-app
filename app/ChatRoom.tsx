@@ -18,9 +18,9 @@ import { EditMessageModal } from '@/shared/components/EditMessageModal';
 import { ImageViewer } from '@/shared/components/ImageViewer';
 import { Avatar } from '@/shared/components/Avatar';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
-import { useOptimizedChatRoom } from '@/shared/hooks/chats/useOptimizedChatRoom';
 import { chatsService } from '@/shared/services/chat';
 import { useQueryClient } from '@tanstack/react-query';
+import { useChatRoom } from '@/shared/hooks/chats/useChatRoom';
 
 export default function ChatRoomScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
@@ -49,7 +49,8 @@ export default function ChatRoomScreen() {
     handlePickImage,
     handleImagePress,
     handleCloseImageViewer,
-  } = useOptimizedChatRoom(chatId);
+    isLoading,
+  } = useChatRoom(chatId);
 
   const keyExtractor = useCallback((item: any) => item.id, []);
 
@@ -69,12 +70,12 @@ export default function ChatRoomScreen() {
   ), [currentUser?.id, handleMessageLongPress, handleImagePress]);
 
   useEffect(() => {
-    if (chat?.messages.length && flatListRef.current) {
+    if (chat?.messages?.length && flatListRef.current && !isLoading) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
-  }, [chat?.messages.length]);
+  }, [chat?.messages?.length, isLoading]);
 
   // Mark messages as read when user views the chat
   useEffect(() => {
@@ -85,6 +86,13 @@ export default function ChatRoomScreen() {
     }
   }, [chatId, currentUser?.id, queryClient]);
 
+  if (isLoading) {
+    return (
+      <ThemedView style={styles.centerContainer}>
+        <ThemedText>Loading...</ThemedText>
+      </ThemedView>
+    );
+  }
 
   if (!chat || !currentUser) {
     return (

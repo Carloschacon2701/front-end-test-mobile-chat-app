@@ -3,7 +3,7 @@ import { useState, useCallback, useReducer } from "react";
 import { Alert } from "react-native";
 import { useGetAllUsers } from "@/shared/hooks/users/useGetAllUsers";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useOptimizedChats } from "./useOptimizedChats";
+import { useGetChatMessages } from "./useGetChatMessages";
 import { Chat, Message, chatsService } from "@/shared/services/chat";
 import { pickImage, compressImage } from "@/shared/utils/imageUtils";
 
@@ -92,12 +92,12 @@ function chatRoomReducer(state: ChatRoomState, action: ChatRoomAction): ChatRoom
     }
 }
 
-export const useOptimizedChatRoom = (chatId: string) => {
+export const useChatRoom = (chatId: string) => {
     const { currentUser } = useAppContext();
     const { users } = useGetAllUsers();
     const [state, dispatch] = useReducer(chatRoomReducer, initialState);
     const [filter, setFilter] = useState('');
-    const { chats } = useOptimizedChats(filter);
+    const { chat, isLoading } = useGetChatMessages(chatId, filter);
 
     const queryClient = useQueryClient();
 
@@ -151,9 +151,6 @@ export const useOptimizedChatRoom = (chatId: string) => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
         }
     });
-
-    // Memoized chat lookup
-    const chat = chats.find(c => c.id === chatId) as Chat;
 
     // Optimized event handlers
     const handleSendMessage = useCallback(() => {
@@ -251,11 +248,13 @@ export const useOptimizedChatRoom = (chatId: string) => {
         dispatch({ type: 'HIDE_IMAGE_VIEWER' });
     }, []);
 
+
     // Memoized computed values
     const chatParticipants = chat?.participants
-        .filter(id => id !== currentUser?.id)
-        .map(id => users.find(user => user.id === id))
-        .filter(Boolean) || [];
+        ?.filter(p => p.id !== currentUser?.id)
+        ?.map(p => users.find(user => user.id === p.id))
+        ?.filter(Boolean) || [];
+
 
     const chatName = chatParticipants.length === 1
         ? chatParticipants[0]?.name
@@ -272,7 +271,7 @@ export const useOptimizedChatRoom = (chatId: string) => {
         currentUser,
         chatParticipants,
         chatName,
-
+        isLoading,
         // Actions
         handleSendMessage,
         handleMessageLongPress,

@@ -5,10 +5,10 @@ import { Avatar } from './Avatar';
 import { ThemedText } from './ThemedText';
 import { type User } from '../services/user';
 import { formatChatTime } from '../utils/timeUtils';
-import { Chat } from '../services/chat';
+import { ChatListItemType } from '../services/chat';
 
 interface ChatListItemProps {
-  chat: Chat;
+  chat: ChatListItemType;
   currentUserId: string;
   users: User[];
   unreadCount?: number;
@@ -18,14 +18,13 @@ interface ChatListItemProps {
 const ChatListItem = React.memo(({ chat, currentUserId, users, unreadCount = 0, searchQuery = '' }: ChatListItemProps) => {
   const navigation = useNavigation();
 
-  const otherParticipants = useMemo(() => {
-    return chat.participants
-      .filter(id => id !== currentUserId)
-      .map(id => users.find(user => user.id === id))
-      .filter(Boolean) as User[];
-  }, [chat.participants, currentUserId, users]);
+  const avatar = chat.participants.find(p => p.id !== currentUserId)
+
 
   const chatName = useMemo(() => {
+
+    const otherParticipants = chat.participants.filter(p => p.id !== currentUserId);
+
     if (otherParticipants.length === 0) {
       return 'No participants';
     } else if (otherParticipants.length === 1) {
@@ -33,7 +32,7 @@ const ChatListItem = React.memo(({ chat, currentUserId, users, unreadCount = 0, 
     } else {
       return `${otherParticipants[0].name} & ${otherParticipants.length - 1} other${otherParticipants.length > 2 ? 's' : ''}`;
     }
-  }, [otherParticipants]);
+  }, [chat.participants, currentUserId]);
 
   const handlePress = () => {
     (navigation as any).navigate('ChatRoom', { chatId: chat.id });
@@ -46,28 +45,20 @@ const ChatListItem = React.memo(({ chat, currentUserId, users, unreadCount = 0, 
 
   const isCurrentUserLastSender = chat.lastMessage?.senderId === currentUserId;
 
-  // Find matching messages for search
-  const matchingMessages = useMemo(() => {
-    if (!searchQuery) return [];
-    const query = searchQuery.toLowerCase();
-    return chat.messages.filter(msg =>
-      msg.text.toLowerCase().includes(query) && !msg.isDeleted
-    );
-  }, [chat.messages, searchQuery]);
 
   // Get the preview text to show
   const previewText = useMemo(() => {
-    if (searchQuery && matchingMessages.length > 0) {
-      const matchCount = matchingMessages.length;
-      return `${matchCount} message${matchCount > 1 ? 's' : ''} match your search`;
-    }
+    // if (searchQuery && matchingMessages.length > 0) {
+    //   const matchCount = matchingMessages.length;
+    //   return `${matchCount} message${matchCount > 1 ? 's' : ''} match your search`;
+    // }
     return chat.lastMessage ? chat.lastMessage.text : '';
-  }, [searchQuery, matchingMessages.length, chat.lastMessage]);
+  }, [searchQuery, chat.lastMessage]);
 
   return (
     <Pressable style={styles.container} onPress={handlePress}>
       <Avatar
-        user={otherParticipants[0]}
+        user={avatar as User}
         size={50}
       />
       <View style={styles.contentContainer}>
@@ -86,7 +77,7 @@ const ChatListItem = React.memo(({ chat, currentUserId, users, unreadCount = 0, 
               style={[
                 styles.lastMessage,
                 isCurrentUserLastSender && !searchQuery && styles.currentUserMessage,
-                searchQuery && matchingMessages.length > 0 && styles.searchMatch
+                // searchQuery && matchingMessages.length > 0 && styles.searchMatch
               ]}
             >
               {isCurrentUserLastSender && !searchQuery && 'You: '}{previewText}

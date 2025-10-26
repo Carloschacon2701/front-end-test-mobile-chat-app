@@ -1,5 +1,5 @@
 import { db } from "../database/db";
-import { chats, chatParticipants, messages } from "../database/schema";
+import { chats, chatParticipants, messages, users } from "../database/schema";
 import { eq, desc, and, inArray, sql, not } from "drizzle-orm";
 
 export interface Message {
@@ -17,11 +17,25 @@ export interface Message {
 
 export interface Chat {
   id: string;
-  participants: string[];
+  participants: {
+    id: string | null;
+    name: string | null;
+  }[];
   messages: Message[];
   lastMessage?: Message;
   offset: number;
   hasMore: boolean;
+}
+
+export interface ChatListItemType {
+  id: string;
+  participants: {
+    id: string | null;
+    name: string | null;
+    avatar: string | null;
+    status: "online" | "offline" | "away" | null;
+  }[];
+  lastMessage?: Message;
   unreadCount: number;
 }
 
@@ -57,12 +71,12 @@ export class ChatsService {
    * Optimized method to load user chats following the working pattern from chats.ts
    * Uses the same approach but with better caching
    */
-  async loadUserChatsOptimized(
+  async getChatList(
     userId: string,
     filter: string
-  ): Promise<Chat[]> {
+  ): Promise<ChatListItemType[]> {
     const cacheKey = `user_chats_${userId}_${filter}`;
-    const cached = this.getCachedResult<Chat[]>(cacheKey);
+    const cached = this.getCachedResult<ChatListItemType[]>(cacheKey);
     if (cached) {
       return cached;
     }
@@ -71,10 +85,6 @@ export class ChatsService {
     const chatIdsWithLastMessage = await db
       .select({
         chatId: chatParticipants.chatId,
-        lastMessageTimestamp:
-          sql<number>`COALESCE(MAX(${messages.timestamp}), 0)`.as(
-            "lastMessageTimestamp"
-          ),
       })
       .from(chatParticipants)
       .leftJoin(messages, eq(chatParticipants.chatId, messages.chatId))
@@ -88,24 +98,35 @@ export class ChatsService {
 
     const chatIds = chatIdsWithLastMessage.map((row) => row.chatId);
 
-    // Batch fetch all participants for all chats at once
-    const allParticipants = await db
-      .select()
-      .from(chatParticipants)
-      .where(inArray(chatParticipants.chatId, chatIds));
+    // // Batch fetch all participants for all chats at once
+    // const allParticipants = await db
+    //   .select()
+    //   .from(chatParticipants)
+    //   .where(inArray(chatParticipants.chatId, chatIds));
 
-    // Group participants by chatId
-    const participantsByChat = allParticipants.reduce((acc, participant) => {
-      if (!acc[participant.chatId]) {
-        acc[participant.chatId] = [];
-      }
-      acc[participant.chatId].push(participant.userId);
-      return acc;
-    }, {} as Record<string, string[]>);
+    // // Group participants by chatId
+    // const participantsByChat = allParticipants.reduce((acc, participant) => {
+    //   if (!acc[participant.chatId]) {
+    //     acc[participant.chatId] = [];
+    //   }
+    //   acc[participant.chatId].push(participant.userId);
+    //   return acc;
+    // }, {} as Record<string, string[]>);
 
     // For each chat, get the recent messages using the optimized function
-    const loadedChats: Chat[] = [];
+    const loadedChats: ChatListItemType[] = [];
     for (const chatId of chatIds) {
+      const participants = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          avatar: users.avatar,
+          status: users.status,
+        })
+        .from(chatParticipants)
+        .leftJoin(users, eq(chatParticipants.userId, users.id))
+        .where(eq(chatParticipants.chatId, chatId));
+
       // Always get the last message without filter for the chat preview
       const lastMessageData = await db
         .select()
@@ -130,29 +151,62 @@ export class ChatsService {
             }
           : undefined;
 
-      // Get filtered messages if filter is provided, otherwise get recent messages
-      const chatMessages = await this.getChatMessagesPaginated(
-        chatId,
-        0,
-        50,
-        filter
-      );
-
       const unreadCount = await this.getUnreadMessageCount(chatId, userId);
 
       loadedChats.push({
         id: chatId,
-        participants: participantsByChat[chatId] || [],
-        messages: chatMessages,
+        participants: participants,
         lastMessage,
-        offset: chatMessages.length,
-        hasMore: chatMessages.length === 50,
         unreadCount,
       });
     }
 
     this.setCachedResult(cacheKey, loadedChats);
     return loadedChats;
+  }
+
+  async getChat(chatId: string): Promise<Chat> {
+    const cached = this.getCachedResult<Chat>(`chat_${chatId}`);
+    if (cached) {
+      return cached;
+    }
+
+    const messagesData = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.chatId, chatId))
+      .orderBy(messages.timestamp);
+
+    const participantsData = await db
+      .select({
+        id: users.id,
+        name: users.name,
+      })
+      .from(chatParticipants)
+      .leftJoin(users, eq(chatParticipants.userId, users.id))
+      .where(eq(chatParticipants.chatId, chatId));
+
+    if (messagesData.length === 0) {
+      throw new Error(`Chat ${chatId} not found`);
+    }
+
+    const chat = {
+      id: messagesData[0].chatId,
+      participants: participantsData,
+      messages: messagesData.map((m) => ({
+        id: m.id,
+        senderId: m.senderId,
+        text: m.text,
+        timestamp: m.timestamp,
+        isRead: m.isRead,
+        isDeleted: m.isDeleted,
+        isEdited: m.isEdited,
+      })),
+      offset: 0,
+      hasMore: false,
+    };
+
+    return chat;
   }
 
   /**
@@ -183,34 +237,6 @@ export class ChatsService {
       acc[row.chatId] = row.count;
       return acc;
     }, {} as Record<string, number>);
-  }
-
-  async getChatMessagesPaginated(
-    chatId: string,
-    offset: number = 0,
-    limit: number = 50,
-    filter: string
-  ): Promise<Message[]> {
-    const messagesData = await db
-      .select()
-      .from(messages)
-      .where(eq(messages.chatId, chatId))
-      .orderBy(messages.timestamp)
-      .offset(offset)
-      .limit(limit);
-
-    return messagesData.map((m) => ({
-      id: m.id,
-      senderId: m.senderId,
-      text: m.text,
-      timestamp: m.timestamp,
-      isRead: m.isRead,
-      isDeleted: m.isDeleted,
-      isEdited: m.isEdited,
-      mediaUrl: m.mediaUrl || undefined,
-      mediaType: m.mediaType || undefined,
-      thumbnailUrl: m.thumbnailUrl || undefined,
-    }));
   }
 
   async markMessagesAsRead(
@@ -315,7 +341,7 @@ export class ChatsService {
   async createNewChat(
     currentUserId: string,
     participantIds: string[]
-  ): Promise<Chat | null> {
+  ): Promise<string | null> {
     try {
       if (!currentUserId || !participantIds.includes(currentUserId)) {
         return null;
@@ -336,18 +362,9 @@ export class ChatsService {
         });
       }
 
-      const newChat: Chat = {
-        id: chatId,
-        participants: participantIds,
-        messages: [],
-        offset: 0,
-        hasMore: false,
-        unreadCount: 0,
-      };
-
       this.invalidateCache(`user_chats_${currentUserId}`);
 
-      return newChat;
+      return chatId;
     } catch (error) {
       console.error("Error creating chat:", error);
       return null;
