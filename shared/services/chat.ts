@@ -1,6 +1,6 @@
 import { db } from "../database/db";
 import { chats, chatParticipants, messages, users } from "../database/schema";
-import { eq, desc, and, inArray, sql, not } from "drizzle-orm";
+import { eq, desc, and, inArray, sql, not, like } from "drizzle-orm";
 
 export interface Message {
   id: string;
@@ -10,9 +10,9 @@ export interface Message {
   isRead: boolean;
   isDeleted: boolean;
   isEdited: boolean;
-  mediaUrl?: string;
-  mediaType?: string;
-  thumbnailUrl?: string;
+  mediaUrl?: string | null;
+  mediaType?: string | null;
+  thumbnailUrl?: string | null;
 }
 
 export interface Chat {
@@ -37,6 +37,7 @@ export interface ChatListItemType {
   }[];
   lastMessage?: Message;
   unreadCount: number;
+  filterMatch?: number;
 }
 
 /**
@@ -85,10 +86,18 @@ export class ChatsService {
     const chatIdsWithLastMessage = await db
       .select({
         chatId: chatParticipants.chatId,
+        filterMatch: sql<number>`SUM(CASE WHEN ${
+          messages.text
+        } LIKE ${`%${filter}%`} THEN 1 ELSE 0 END)`,
       })
       .from(chatParticipants)
       .leftJoin(messages, eq(chatParticipants.chatId, messages.chatId))
       .where(eq(chatParticipants.userId, userId))
+      .having(
+        sql`SUM(CASE WHEN ${
+          messages.text
+        } LIKE ${`%${filter}%`} THEN 1 ELSE 0 END) > 0`
+      )
       .groupBy(chatParticipants.chatId)
       .orderBy(desc(sql`COALESCE(MAX(${messages.timestamp}), 0)`));
 
@@ -97,21 +106,6 @@ export class ChatsService {
     }
 
     const chatIds = chatIdsWithLastMessage.map((row) => row.chatId);
-
-    // // Batch fetch all participants for all chats at once
-    // const allParticipants = await db
-    //   .select()
-    //   .from(chatParticipants)
-    //   .where(inArray(chatParticipants.chatId, chatIds));
-
-    // // Group participants by chatId
-    // const participantsByChat = allParticipants.reduce((acc, participant) => {
-    //   if (!acc[participant.chatId]) {
-    //     acc[participant.chatId] = [];
-    //   }
-    //   acc[participant.chatId].push(participant.userId);
-    //   return acc;
-    // }, {} as Record<string, string[]>);
 
     // For each chat, get the recent messages using the optimized function
     const loadedChats: ChatListItemType[] = [];
@@ -158,6 +152,8 @@ export class ChatsService {
         participants: participants,
         lastMessage,
         unreadCount,
+        filterMatch: chatIdsWithLastMessage.find((row) => row.chatId === chatId)
+          ?.filterMatch,
       });
     }
 
@@ -170,8 +166,6 @@ export class ChatsService {
     if (cached) {
       return cached;
     }
-
-    console.log("getChat", chatId);
 
     const chatData = await db.select().from(chats).where(eq(chats.id, chatId));
 
@@ -207,6 +201,9 @@ export class ChatsService {
               isRead: m.isRead,
               isDeleted: m.isDeleted,
               isEdited: m.isEdited,
+              mediaUrl: m?.mediaUrl,
+              mediaType: m?.mediaType,
+              thumbnailUrl: m?.thumbnailUrl,
             }))
           : [],
       offset: 0,

@@ -48,10 +48,10 @@ const ChatListItem = React.memo(({ chat, currentUserId, users, unreadCount = 0, 
 
   // Get the preview text to show
   const previewText = useMemo(() => {
-    // if (searchQuery && matchingMessages.length > 0) {
-    //   const matchCount = matchingMessages.length;
-    //   return `${matchCount} message${matchCount > 1 ? 's' : ''} match your search`;
-    // }
+    if (searchQuery) {
+      const matchCount = chat.filterMatch || 0;
+      return `${matchCount} message${matchCount > 1 ? 's' : ''} match your search`;
+    }
     return chat.lastMessage ? chat.lastMessage.text : '';
   }, [searchQuery, chat.lastMessage]);
 
@@ -77,7 +77,7 @@ const ChatListItem = React.memo(({ chat, currentUserId, users, unreadCount = 0, 
               style={[
                 styles.lastMessage,
                 isCurrentUserLastSender && !searchQuery && styles.currentUserMessage,
-                // searchQuery && matchingMessages.length > 0 && styles.searchMatch
+                searchQuery && Boolean(chat.filterMatch) && styles.searchMatch
               ]}
             >
               {isCurrentUserLastSender && !searchQuery && 'You: '}{previewText}

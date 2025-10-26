@@ -19,7 +19,7 @@ export default function ChatsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const { chats } = useGetChatList(searchQuery);
+  const { chats, isLoading } = useGetChatList(searchQuery);
 
 
   const toggleUserSelection = useCallback((userId: string) => {
@@ -96,25 +96,25 @@ export default function ChatsScreen() {
         </Pressable>
       </ThemedView>
 
-      <TextInput
+      {isLoading ? <ThemedText>Loading...</ThemedText> : <><TextInput
         placeholder="Search chats"
         style={styles.searchInput}
         value={searchQuery}
         onChangeText={handleSearch}
       />
 
-      <FlatList
-        data={chats}
-        keyExtractor={keyExtractor}
-        renderItem={renderChatItem}
-        getItemLayout={getItemLayout}
-        initialNumToRender={10}
-        maxToRenderPerBatch={5}
-        windowSize={10}
-        removeClippedSubviews={true}
-        ListEmptyComponent={renderEmptyComponent}
-        contentContainerStyle={styles.listContainer}
-      />
+        <FlatList
+          data={chats}
+          keyExtractor={keyExtractor}
+          renderItem={renderChatItem}
+          getItemLayout={getItemLayout}
+          initialNumToRender={10}
+          maxToRenderPerBatch={5}
+          windowSize={10}
+          removeClippedSubviews={true}
+          ListEmptyComponent={renderEmptyComponent}
+          contentContainerStyle={styles.listContainer}
+        /></>}
 
       <Modal
         animationType="slide"
