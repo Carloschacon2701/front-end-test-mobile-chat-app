@@ -171,6 +171,14 @@ export class ChatsService {
       return cached;
     }
 
+    console.log("getChat", chatId);
+
+    const chatData = await db.select().from(chats).where(eq(chats.id, chatId));
+
+    if (chatData.length === 0) {
+      throw new Error(`Chat ${chatId} not found`);
+    }
+
     const messagesData = await db
       .select()
       .from(messages)
@@ -186,22 +194,21 @@ export class ChatsService {
       .leftJoin(users, eq(chatParticipants.userId, users.id))
       .where(eq(chatParticipants.chatId, chatId));
 
-    if (messagesData.length === 0) {
-      throw new Error(`Chat ${chatId} not found`);
-    }
-
     const chat = {
-      id: messagesData[0].chatId,
+      id: chatData[0].id,
       participants: participantsData,
-      messages: messagesData.map((m) => ({
-        id: m.id,
-        senderId: m.senderId,
-        text: m.text,
-        timestamp: m.timestamp,
-        isRead: m.isRead,
-        isDeleted: m.isDeleted,
-        isEdited: m.isEdited,
-      })),
+      messages:
+        messagesData?.length > 0
+          ? messagesData.map((m) => ({
+              id: m.id,
+              senderId: m.senderId,
+              text: m.text,
+              timestamp: m.timestamp,
+              isRead: m.isRead,
+              isDeleted: m.isDeleted,
+              isEdited: m.isEdited,
+            }))
+          : [],
       offset: 0,
       hasMore: false,
     };

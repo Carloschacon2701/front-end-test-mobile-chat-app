@@ -99,6 +99,7 @@ export const useChatRoom = (chatId: string) => {
     const [filter, setFilter] = useState('');
     const { chat, isLoading } = useGetChatMessages(chatId, filter);
 
+
     const queryClient = useQueryClient();
 
     // Memoized mutations to prevent unnecessary re-renders
@@ -108,6 +109,7 @@ export const useChatRoom = (chatId: string) => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
+            queryClient.invalidateQueries({ queryKey: ['chatMessages', chatId] });
         }
     });
 
@@ -117,6 +119,7 @@ export const useChatRoom = (chatId: string) => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
+            queryClient.invalidateQueries({ queryKey: ['chatMessages', chatId] });
         }
     });
 
@@ -126,6 +129,7 @@ export const useChatRoom = (chatId: string) => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
+            queryClient.invalidateQueries({ queryKey: ['chatMessages', chatId] });
         }
     });
 
@@ -149,6 +153,7 @@ export const useChatRoom = (chatId: string) => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
+            queryClient.invalidateQueries({ queryKey: ['chatMessages', chatId] });
         }
     });
 
