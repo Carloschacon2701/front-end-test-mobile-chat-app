@@ -19,7 +19,7 @@ export const useOptimizedChats = (filter: string = '') => {
             return result;
         },
         enabled: !!currentUser?.id,
-        staleTime: 30000, // 30 seconds cache
+        staleTime: 0, // Always fetch fresh data
         gcTime: 60000, // 1 minute cache time
     });
 

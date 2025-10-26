@@ -156,43 +156,6 @@ export class ChatsService {
   }
 
   /**
-   * Optimized method to get messages with pagination
-   */
-  async getChatMessagesOptimized(
-    chatId: string,
-    offset: number = 0,
-    limit: number = 50
-  ): Promise<Message[]> {
-    const cacheKey = `chat_messages_${chatId}_${offset}_${limit}`;
-    const cached = this.getCachedResult<Message[]>(cacheKey);
-    if (cached) return cached;
-
-    const messagesData = await db
-      .select()
-      .from(messages)
-      .where(eq(messages.chatId, chatId))
-      .orderBy(desc(messages.timestamp))
-      .offset(offset)
-      .limit(limit);
-
-    const result = messagesData.map((m) => ({
-      id: m.id,
-      senderId: m.senderId,
-      text: m.text,
-      timestamp: m.timestamp,
-      isRead: m.isRead,
-      isDeleted: m.isDeleted,
-      isEdited: m.isEdited,
-      mediaUrl: m.mediaUrl || undefined,
-      mediaType: m.mediaType || undefined,
-      thumbnailUrl: m.thumbnailUrl || undefined,
-    }));
-
-    this.setCachedResult(cacheKey, result);
-    return result;
-  }
-
-  /**
    * Batch operation to get unread counts for multiple chats
    */
   async getUnreadCountsForChats(
@@ -264,7 +227,7 @@ export class ChatsService {
           not(eq(messages.senderId, currentUserId))
         )
       );
-    this.invalidateCache(`chat_${chatId}`);
+    this.queryCache.clear();
   }
 
   async sendMessageToChat(
@@ -291,8 +254,9 @@ export class ChatsService {
         thumbnailUrl: thumbnailUrl,
       });
 
-      // Invalidate cache for this chat
-      this.invalidateCache(`chat_${chatId}`);
+      // Invalidate all caches
+      this.invalidateCache(chatId);
+      this.queryCache.clear();
 
       const newMessage: Message = {
         id: messageId,
@@ -337,7 +301,7 @@ export class ChatsService {
       .update(messages)
       .set({ text: text, isEdited: true })
       .where(eq(messages.id, messageId));
-    this.invalidateCache(`chat_${messageId}`);
+    this.queryCache.clear();
   }
 
   async deleteMessage(messageId: string): Promise<void> {
@@ -345,7 +309,7 @@ export class ChatsService {
       .update(messages)
       .set({ isDeleted: true })
       .where(eq(messages.id, messageId));
-    this.invalidateCache(`chat_${messageId}`);
+    this.queryCache.clear();
   }
 
   async createNewChat(

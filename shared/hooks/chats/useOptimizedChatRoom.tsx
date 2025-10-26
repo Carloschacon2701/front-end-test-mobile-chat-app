@@ -181,10 +181,7 @@ export const useOptimizedChatRoom = (chatId: string) => {
                 id: state.selectedMessage.id,
                 text: newText,
             });
-
-            if (editMessageMutation.isSuccess) {
-                dispatch({ type: 'HIDE_EDIT_MODAL' });
-            }
+            dispatch({ type: 'HIDE_EDIT_MODAL' });
         }
     }, [state.selectedMessage, editMessageMutation]);
 
@@ -203,9 +200,7 @@ export const useOptimizedChatRoom = (chatId: string) => {
                         style: 'destructive',
                         onPress: async () => {
                             deleteMessageMutation.mutate(state.selectedMessage!.id);
-                            if (deleteMessageMutation.isSuccess) {
-                                dispatch({ type: 'HIDE_ACTION_MENU' });
-                            }
+                            dispatch({ type: 'HIDE_ACTION_MENU' });
                         },
                     },
                 ]

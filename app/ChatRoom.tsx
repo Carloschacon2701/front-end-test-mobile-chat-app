@@ -20,11 +20,13 @@ import { Avatar } from '@/shared/components/Avatar';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
 import { useOptimizedChatRoom } from '@/shared/hooks/chats/useOptimizedChatRoom';
 import { chatsService } from '@/shared/services/chat';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function ChatRoomScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { handleSendMessage,
     actionMenuVisible,
     selectedMessage,
@@ -77,9 +79,11 @@ export default function ChatRoomScreen() {
   // Mark messages as read when user views the chat
   useEffect(() => {
     if (chatId && currentUser?.id) {
-      chatsService.markMessagesAsRead(chatId, currentUser.id);
+      chatsService.markMessagesAsRead(chatId, currentUser.id).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['chats'] });
+      });
     }
-  }, [chatId, currentUser?.id]);
+  }, [chatId, currentUser?.id, queryClient]);
 
 
   if (!chat || !currentUser) {
