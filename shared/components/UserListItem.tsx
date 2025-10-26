@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { Avatar } from './Avatar';
-import { User } from '@/hooks/useUser';
+import { User } from '../services/user';
 
 interface UserListItemProps {
   user: User;
@@ -18,8 +18,8 @@ export function UserListItem({ user, onSelect, isSelected }: UserListItemProps) 
   };
 
   return (
-    <Pressable 
-      style={[styles.container, isSelected && styles.selectedContainer]} 
+    <Pressable
+      style={[styles.container, isSelected && styles.selectedContainer]}
       onPress={handlePress}
     >
       <Avatar user={user} size={50} />
