@@ -11,14 +11,14 @@ export const db = drizzle(sqlite, { schema });
 // Initialize function to create tables if they don't exist
 export async function initializeDatabase() {
   try {
-    // console.log("Dropping users table...");
-    // await sqlite.execAsync(`DROP TABLE IF EXISTS users`);
-    // console.log("Dropping chats table...");
-    // await sqlite.execAsync(`DROP TABLE IF EXISTS chats`);
-    // console.log("Dropping chat_participants table...");
-    // await sqlite.execAsync(`DROP TABLE IF EXISTS chat_participants`);
-    // console.log("Dropping messages table...");
-    // await sqlite.execAsync(`DROP TABLE IF EXISTS messages`);
+    console.log("Dropping users table...");
+    await sqlite.execAsync(`DROP TABLE IF EXISTS users`);
+    console.log("Dropping chats table...");
+    await sqlite.execAsync(`DROP TABLE IF EXISTS chats`);
+    console.log("Dropping chat_participants table...");
+    await sqlite.execAsync(`DROP TABLE IF EXISTS chat_participants`);
+    console.log("Dropping messages table...");
+    await sqlite.execAsync(`DROP TABLE IF EXISTS messages`);
 
     console.log("Creating users table...");
     await sqlite.execAsync(`

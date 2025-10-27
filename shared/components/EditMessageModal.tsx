@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TextInput, Pressable, Modal } from 'react-native';
+import { View, StyleSheet, TextInput, Pressable, Modal, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { ThemedText } from '@/shared/components/ThemedText';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
 import { useColorScheme } from '@/shared/hooks/theme/useColorScheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface EditMessageModalProps {
     visible: boolean;
@@ -21,6 +22,7 @@ export const EditMessageModal = React.memo(({
     const [text, setText] = useState(initialText);
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         if (visible) {
@@ -56,60 +58,73 @@ export const EditMessageModal = React.memo(({
             >
                 <Pressable style={styles.backdrop} onPress={handleCancel} />
 
-                <View
-                    style={[
-                        styles.modalContainer,
-                        {
-                            backgroundColor: isDark ? 'rgba(40, 40, 40, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-                        }
-                    ]}
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={styles.keyboardAvoidingView}
+                    keyboardVerticalOffset={insets.top}
                 >
-                    <ThemedText style={styles.title}>Edit Message</ThemedText>
-
-                    <TextInput
-                        style={[
-                            styles.textInput,
-                            {
-                                backgroundColor: isDark ? 'rgba(60, 60, 60, 0.8)' : 'rgba(240, 240, 240, 0.8)',
-                                color: isDark ? '#FFFFFF' : '#000000',
-                            }
-                        ]}
-                        value={text}
-                        onChangeText={setText}
-                        placeholder="Type your message..."
-                        placeholderTextColor={isDark ? '#999999' : '#666666'}
-                        multiline
-                        maxLength={1000}
-                        autoFocus
-                        selectTextOnFocus
-                    />
-
-                    <View style={styles.buttonContainer}>
-                        <Pressable
-                            style={[styles.button, styles.cancelButton]}
-                            onPress={handleCancel}
-                        >
-                            <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
-                        </Pressable>
-
-                        <Pressable
+                    <ScrollView
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        <View
                             style={[
-                                styles.button,
-                                styles.saveButton,
-                                { backgroundColor: text.trim() ? '#007AFF' : '#CCCCCC' }
+                                styles.modalContainer,
+                                {
+                                    backgroundColor: isDark ? 'rgba(40, 40, 40, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                                    marginTop: insets.top,
+                                    marginBottom: insets.bottom,
+                                }
                             ]}
-                            onPress={handleSave}
-                            disabled={!text.trim()}
                         >
-                            <ThemedText style={[
-                                styles.saveButtonText,
-                                { color: text.trim() ? '#FFFFFF' : '#999999' }
-                            ]}>
-                                Save
-                            </ThemedText>
-                        </Pressable>
-                    </View>
-                </View>
+                            <ThemedText style={styles.title}>Edit Message</ThemedText>
+
+                            <TextInput
+                                style={[
+                                    styles.textInput,
+                                    {
+                                        backgroundColor: isDark ? 'rgba(60, 60, 60, 0.8)' : 'rgba(240, 240, 240, 0.8)',
+                                        color: isDark ? '#FFFFFF' : '#000000',
+                                    }
+                                ]}
+                                value={text}
+                                onChangeText={setText}
+                                placeholder="Type your message..."
+                                placeholderTextColor={isDark ? '#999999' : '#666666'}
+                                multiline
+                                maxLength={1000}
+                                autoFocus
+                                selectTextOnFocus
+                            />
+
+                            <View style={styles.buttonContainer}>
+                                <Pressable
+                                    style={[styles.button, styles.cancelButton]}
+                                    onPress={handleCancel}
+                                >
+                                    <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
+                                </Pressable>
+
+                                <Pressable
+                                    style={[
+                                        styles.button,
+                                        styles.saveButton,
+                                        { backgroundColor: text.trim() ? '#007AFF' : '#CCCCCC' }
+                                    ]}
+                                    onPress={handleSave}
+                                    disabled={!text.trim()}
+                                >
+                                    <ThemedText style={[
+                                        styles.saveButtonText,
+                                        { color: text.trim() ? '#FFFFFF' : '#999999' }
+                                    ]}>
+                                        Save
+                                    </ThemedText>
+                                </Pressable>
+                            </View>
+                        </View>
+                    </ScrollView>
+                </KeyboardAvoidingView>
             </BlurView>
         </Modal>
     );
@@ -127,6 +142,18 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
+    },
+    keyboardAvoidingView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+    },
+    scrollContent: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
     },
     modalContainer: {
         width: '90%',

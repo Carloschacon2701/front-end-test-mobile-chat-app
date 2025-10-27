@@ -5,9 +5,11 @@ import { ThemedText } from '@/shared/components/ThemedText';
 import { ThemedView } from '@/shared/components/ThemedView';
 import { Avatar } from '@/shared/components/Avatar';
 import { IconSymbol } from '@/shared/components/ui/IconSymbol';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
   const { currentUser, logout } = useAppContext();
+  const insets = useSafeAreaInsets();
 
   const handleLogout = () => {
     logout();
@@ -23,7 +25,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ThemedView style={styles.container}>
+      <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
         <ThemedView style={styles.profileHeader}>
           <Avatar user={currentUser} size={100} />
           <ThemedView style={styles.profileInfo}>
@@ -65,7 +67,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingTop: 60,
   },
   loadingContainer: {
     flex: 1,

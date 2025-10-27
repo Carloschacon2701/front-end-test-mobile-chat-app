@@ -75,7 +75,7 @@
 
 ### Service Functions
 
-- **User Services**: `loadAllUsers()`, `getUserById()`, `createUser()`
+- **User Services**: `chat` `user`
 - **Chat Services**: Optimized with single query approach
 - **Message Services**: Edit/delete functionality with soft delete
 - **Cache Management**: Intelligent invalidation patterns
@@ -95,13 +95,6 @@
 - **Smooth Animations**: Spring animations for menu appearance
 - **Edge Detection**: Smart menu positioning to avoid screen edges
 - **Confirmation Dialogs**: Delete confirmation with destructive styling
-
-### Performance Monitoring
-
-- **Render Tracking**: Real-time component render counts
-- **Execution Timing**: Performance measurement hooks
-- **Development Tools**: Visual performance metrics overlay
-- **Optimization Insights**: Easy identification of bottlenecks
 
 ## 🔧 Code Quality Improvements
 
@@ -141,4 +134,4 @@
 ### Bug Fixes
 
 - [ ] Fix message ordering in chat rooms (newest messages should appear at the bottom, next to the input box)
-- [ ] Resolve keyboard or other components overlap issues on different device sizes
+- [✓] Resolve keyboard or other components overlap issues on different device sizes

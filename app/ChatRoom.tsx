@@ -7,6 +7,7 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
 } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -21,12 +22,21 @@ import { IconSymbol } from '@/shared/components/ui/IconSymbol';
 import { chatsService } from '@/shared/services/chat';
 import { useQueryClient } from '@tanstack/react-query';
 import { useChatRoom } from '@/shared/hooks/chats/useChatRoom';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ChatRoomScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
   const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
+
+  // Calculate header height dynamically (safe area + status bar + header)
+  const headerHeight = useMemo(() => {
+    const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? (insets.top > 20 ? 44 : 20) : 0;
+    const HEADER_HEIGHT = 44; // Standard iOS/Android header height
+    return insets.top + STATUS_BAR_HEIGHT + HEADER_HEIGHT;
+  }, [insets.top]);
   const { handleSendMessage,
     actionMenuVisible,
     selectedMessage,
@@ -69,13 +79,19 @@ export default function ChatRoomScreen() {
     />
   ), [currentUser?.id, handleMessageLongPress, handleImagePress]);
 
+  const handleScrollBeginDrag = useCallback(() => {
+    Keyboard.dismiss();
+  }, []);
+
+  // Scroll to end when chat is opened or messages change
   useEffect(() => {
-    if (chat?.messages?.length && flatListRef.current && !isLoading) {
+    if (chat?.messages?.length && flatListRef.current) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
   }, [chat?.messages?.length, isLoading]);
+
 
   // Mark messages as read when user views the chat
   useEffect(() => {
@@ -105,8 +121,8 @@ export default function ChatRoomScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
     >
       <StatusBar style="auto" />
       <Stack.Screen
@@ -141,6 +157,8 @@ export default function ChatRoomScreen() {
         maxToRenderPerBatch={10}
         windowSize={10}
         removeClippedSubviews={true}
+        keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={handleScrollBeginDrag}
         // onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         contentContainerStyle={styles.messagesContainer}

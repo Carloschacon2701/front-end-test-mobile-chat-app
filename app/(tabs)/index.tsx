@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { FlatList, StyleSheet, Pressable, Modal, TextInput } from 'react-native';
+import { FlatList, StyleSheet, Pressable, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useAppContext } from '@/shared/hooks/AppContext';
 import { ThemedText } from '@/shared/components/ThemedText';
 import { ThemedView } from '@/shared/components/ThemedView';
@@ -11,6 +11,7 @@ import { useUserListActions } from '@/shared/hooks/chats/useUserListActions';
 import { router } from 'expo-router';
 import { ChatListItemType } from '@/shared/services/chat';
 import { useGetChatList } from '@/shared/hooks/chats/useGetChatList';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ChatsScreen() {
   const { currentUser } = useAppContext();
@@ -20,6 +21,8 @@ export default function ChatsScreen() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const { chats, isLoading } = useGetChatList(searchQuery);
+  const insets = useSafeAreaInsets();
+
 
 
   const toggleUserSelection = useCallback((userId: string) => {
@@ -85,7 +88,7 @@ export default function ChatsScreen() {
 
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <ThemedView style={styles.header}>
         <ThemedText type="title">Chats</ThemedText>
         <Pressable
@@ -96,12 +99,15 @@ export default function ChatsScreen() {
         </Pressable>
       </ThemedView>
 
-      {isLoading ? <ThemedText>Loading...</ThemedText> : <><TextInput
+      <TextInput
         placeholder="Search chats"
         style={styles.searchInput}
-        value={searchQuery}
+        // value={searchQuery}
         onChangeText={handleSearch}
+
       />
+
+      {isLoading ? <ThemedText>Loading...</ThemedText> : <>
 
         <FlatList
           data={chats}
@@ -125,7 +131,11 @@ export default function ChatsScreen() {
           setSelectedUsers([]);
         }}
       >
-        <ThemedView style={styles.modalContainer}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
+          keyboardVerticalOffset={insets.top}
+        >
           <ThemedView style={styles.modalContent}>
             <ThemedView style={styles.modalHeader}>
               <ThemedText type="subtitle">New Chat</ThemedText>
@@ -152,6 +162,7 @@ export default function ChatsScreen() {
                 />
               )}
               style={styles.userList}
+              keyboardShouldPersistTaps="handled"
             />
 
             <Pressable
@@ -167,7 +178,7 @@ export default function ChatsScreen() {
               </ThemedText>
             </Pressable>
           </ThemedView>
-        </ThemedView>
+        </KeyboardAvoidingView>
       </Modal>
     </ThemedView>
   );
@@ -176,7 +187,6 @@ export default function ChatsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 60,
   },
   header: {
     flexDirection: 'row',
@@ -230,6 +240,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingTop: 0,
   },
   modalContent: {
     width: '90%',

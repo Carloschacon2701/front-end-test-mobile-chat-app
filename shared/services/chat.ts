@@ -83,7 +83,7 @@ export class ChatsService {
     }
 
     // Get chat IDs where the user is a participant, ordered by last message timestamp
-    const chatIdsWithLastMessage = await db
+    const baseQuery = db
       .select({
         chatId: chatParticipants.chatId,
         filterMatch: sql<number>`SUM(CASE WHEN ${
@@ -93,13 +93,25 @@ export class ChatsService {
       .from(chatParticipants)
       .leftJoin(messages, eq(chatParticipants.chatId, messages.chatId))
       .where(eq(chatParticipants.userId, userId))
-      .having(
-        sql`SUM(CASE WHEN ${
-          messages.text
-        } LIKE ${`%${filter}%`} THEN 1 ELSE 0 END) > 0`
-      )
-      .groupBy(chatParticipants.chatId)
-      .orderBy(desc(sql`COALESCE(MAX(${messages.timestamp}), 0)`));
+      .groupBy(chatParticipants.chatId);
+
+    // Only apply the having clause if there's a filter
+
+    let chatIdsWithLastMessage;
+
+    if (filter && filter.trim().length > 0) {
+      chatIdsWithLastMessage = await baseQuery
+        .having(
+          sql`SUM(CASE WHEN ${
+            messages.text
+          } LIKE ${`%${filter}%`} THEN 1 ELSE 0 END) > 0`
+        )
+        .orderBy(desc(sql`COALESCE(MAX(${messages.timestamp}), 0)`));
+    } else {
+      chatIdsWithLastMessage = await baseQuery.orderBy(
+        desc(sql`COALESCE(MAX(${messages.timestamp}), 0)`)
+      );
+    }
 
     if (chatIdsWithLastMessage.length === 0) {
       return [];

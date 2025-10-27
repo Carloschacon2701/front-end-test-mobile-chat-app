@@ -7,11 +7,13 @@ import { ThemedText } from '@/shared/components/ThemedText';
 import { ThemedView } from '@/shared/components/ThemedView';
 import { UserListItem } from '@/shared/components/UserListItem';
 import { useGetAllUsers } from '@/shared/hooks/users/useGetAllUsers';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
   const { login } = useAppContext();
   const { users } = useGetAllUsers();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const handleUserSelect = async (userId: string) => {
     if (await login(userId)) {
@@ -22,7 +24,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="auto" />
-      <ThemedView style={styles.container}>
+      <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
         <ThemedView style={styles.header}>
           <ThemedText type="title">Welcome to Chat App</ThemedText>
           <ThemedText style={styles.subtitle}>
@@ -52,7 +54,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingTop: 20,
   },
   header: {
     alignItems: 'center',
