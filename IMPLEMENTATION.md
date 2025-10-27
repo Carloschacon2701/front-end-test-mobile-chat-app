@@ -85,7 +85,7 @@
 ### Message Management
 
 - **Edit Messages**: Long-press to edit with pre-filled text input
-- **Soft Delete**: Messages marked as deleted with placeholder text
+- **Soft Delete**: Messages marked as deleted with placeholder text. (Long-press to delete the message)
 - **Read Status**: Visual indicators and unread count tracking
 - **Auto Mark as Read**: Messages automatically marked when viewing chat
 
